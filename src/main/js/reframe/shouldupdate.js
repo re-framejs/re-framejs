@@ -1,10 +1,8 @@
 'use strict';
 
 import _ from 'underscore';
-import log from 'loglevel';
 import {isImmutable, isImmutableEqual, isPrimitive, isPrimitiveEqual, compare} from './utils';
 
-log.setLevel(log.levels.INFO);
 
 /**
  * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
@@ -33,7 +31,7 @@ export function shouldUpdate(props, nextProps, ignore) {
 
             if (!_.isUndefined(immutableEqual)) {
                 if (!immutableEqual) {
-                    log.debug('Immutable ', value, nextValue, ' not equal');
+                    console.debug('Immutable ', value, nextValue, ' not equal');
                 }
                 return !immutableEqual;
             }
@@ -41,12 +39,12 @@ export function shouldUpdate(props, nextProps, ignore) {
             let primitiveEqual = compare(value, nextValue, isPrimitive, isPrimitiveEqual);
             if (!_.isUndefined(primitiveEqual)) {
                 if (!primitiveEqual) {
-                    log.debug('Primitive ', value, nextValue, ' not equal');
+                    console.debug('Primitive ', value, nextValue, ' not equal');
                 }
                 return !primitiveEqual;
             }
 
-            log.warn('Props ', value, nextValue, ' are not immutable');
+            console.warn('Props ', value, nextValue, ' are not immutable');
             return true;
         });
     }

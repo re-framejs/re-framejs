@@ -10,7 +10,13 @@ module.exports = {
         path: path.resolve('dist/'),
         publicPath: '/js/',
         filename: "[name].js",
-        library: ['reframe']
+        library: ['reframe'],
+        libraryTarget: 'umd'
+    },
+    externals: {
+        immutable: 'Immutable',
+        react: 'React',
+        rx: 'Rx'
     },
     resolve: {
         root: [

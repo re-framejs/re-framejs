@@ -6,7 +6,6 @@
   "dependencies": {
     "immutable": "^3.7.5",
     "immutablediff": "^0.4.2",
-    "loglevel": "^1.4.0",
     "react": "^0.14.3",
     "react-dom": "^0.14.3",
     "rx": "^4.0.7",

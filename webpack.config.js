@@ -2,14 +2,14 @@ var path = require('path');
 
 module.exports = {
     entry: {
-        main: 'myapp.js',
-        perf: 'perf.js',
+        //main: 'myapp.js',
+        //perf: 'perf.js',
         reframe: 'reframe/core.js'
     },
     output: {
-        path: path.resolve('target'),
+        path: path.resolve('dist/'),
         publicPath: '/js/',
-        filename: "[name].bundle.js"
+        filename: "[name].js"
     },
     resolve: {
         root: [

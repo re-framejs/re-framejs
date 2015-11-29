@@ -9,7 +9,8 @@ module.exports = {
     output: {
         path: path.resolve('dist/'),
         publicPath: '/js/',
-        filename: "[name].js"
+        filename: "[name].js",
+        library: ['reframe']
     },
     resolve: {
         root: [

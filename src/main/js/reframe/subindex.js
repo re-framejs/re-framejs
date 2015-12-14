@@ -29,7 +29,7 @@ export class Index {
                         subscription = parentRx
                             .map(a => {
                                 if (a) {
-                                    return a.get(lastFragment);
+                                    return a.get(lastFragment, def);
                                 }
                                 return def;
                             })

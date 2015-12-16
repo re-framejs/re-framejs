@@ -28,10 +28,9 @@ export class Index {
                     let subject = new Rx.ReplaySubject(1),
                         subscription = parentRx
                             .map(a => {
-                                if (a) {
-                                    return a.get(lastFragment, def);
+                                if (a && a.get) {
+                                    return a.get(lastFragment);
                                 }
-                                return def;
                             })
                             .distinctUntilChanged(x => x, (x, y) => x === y)
                             //.doOnNext(v => console.log('v', v.toJS()))
@@ -54,7 +53,7 @@ export class Index {
             this.listeners
         );
 
-        return this.listeners.getIn(path.concat([LISTENER_SENTINEL]), new Rx.BehaviorSubject(Immutable.Map()));
+        return this.listeners.getIn(path.concat([LISTENER_SENTINEL])).map(a => a ? a : def);
     }
 }
 

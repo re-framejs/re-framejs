@@ -17,6 +17,7 @@ module.exports.viewP = react.viewP;
 module.exports.viewV = react.viewV;
 module.exports.viewSP = react.viewSP;
 module.exports.viewSV = react.viewSV;
+module.exports.view = react.viewSV;
 module.exports.deref = react.deref;
 module.exports.atom = atom.atom;
 module.exports.swap = atom.swap;

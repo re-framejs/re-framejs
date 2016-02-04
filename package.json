@@ -1,8 +1,8 @@
 {
-  "name": "reframejs",
+  "name": "re-framejs",
   "version": "0.0.1",
   "description": "",
-  "main": "dist/reframe.js",
+  "main": "dist/re-frame.js",
   "dependencies": {
     "immutable": "^3.7.5",
     "immutablediff": "^0.4.2",

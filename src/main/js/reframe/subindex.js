@@ -29,8 +29,9 @@ export class Index {
                         subscription = parentRx
                             .map(a => {
                                 if (a && a.get) {
-                                    return a.get(lastFragment);
+                                    return a.get(lastFragment, def);
                                 }
+                                return def;
                             })
                             .distinctUntilChanged(x => x, (x, y) => x === y)
                             //.doOnNext(v => console.log('v', v.toJS()))

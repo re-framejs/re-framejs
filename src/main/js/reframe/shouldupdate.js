@@ -1,7 +1,6 @@
 'use strict';
 
 import _ from 'underscore';
-import {isImmutable, isImmutableEqual, isPrimitive, isPrimitiveEqual, compare} from './utils';
 
 
 /**
@@ -19,34 +18,31 @@ export function shouldUpdate(props, nextProps, ignore) {
         return false;
     }
     if (ignore && ignore.length > 0) {
-        let filtered = _.filter(props, (v, k) => !_.contains(ignore, k));
-        entries = _.map(filtered, (v, k) => [v, nextProps[k]]);
+        entries = Object.keys(props)
+            .filter(k => ignore.indexOf(k) >= 0)
+            .map(k => [props[k], nextProps[k]]);
     } else {
-        entries = _.map(props, (v, k) => [v, nextProps[k]]);
+        entries = Object.keys(props).map(k => [props[k], nextProps[k]]);
     }
 
     if (entries.length) {
-        return _.some(entries, function ([value, nextValue]) {
-            let immutableEqual = compare(value, nextValue, isImmutable, isImmutableEqual);
+        return !entries.every(function ([value, nextValue]) {
+            if ((isPrimitive(value) && isPrimitive(nextValue))
+                ||
+                (isImmutable(value) && isImmutable(nextValue))) {
 
-            if (!_.isUndefined(immutableEqual)) {
-                if (!immutableEqual) {
-                    console.debug('Immutable ', value, nextValue, ' not equal');
-                }
-                return !immutableEqual;
+                return value === nextValue;
             }
-
-            let primitiveEqual = compare(value, nextValue, isPrimitive, isPrimitiveEqual);
-            if (!_.isUndefined(primitiveEqual)) {
-                if (!primitiveEqual) {
-                    console.debug('Primitive ', value, nextValue, ' not equal');
-                }
-                return !primitiveEqual;
-            }
-
-            console.warn('Props ', value, nextValue, ' are not immutable');
-            return true;
+            return false;
         });
     }
     return false;
+}
+function isImmutable(maybeImmutable) {
+    return Immutable.Iterable.isIterable(maybeImmutable);
+}
+
+function isPrimitive(value) {
+    var type = typeof value;
+    return type === 'number' || type === 'boolean' || type === 'string' || value === null || value === void 0;
 }

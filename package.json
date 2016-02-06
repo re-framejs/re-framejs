@@ -9,8 +9,7 @@
     "react": "^0.14.3",
     "react-dom": "^0.14.3",
     "rx": "^4.0.7",
-    "rx-dom": "^7.0.3",
-    "underscore": "^1.8.3"
+    "rx-dom": "^7.0.3"
   },
   "devDependencies": {
     "babel-core": "^6.2.1",

@@ -1,8 +1,5 @@
 'use strict';
 
-import _ from 'underscore';
-
-
 /**
  * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
  * return false. If props contains only immutable entries compare them by type.

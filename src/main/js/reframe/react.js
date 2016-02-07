@@ -19,14 +19,14 @@ let data = {
 
 function shouldUpdateByDerefed(derefed) {
     return derefed
-        .map(([rx, oldValue])=> {
-            return rx.getValue() !== oldValue;
+        .map(derefed=> {
+            return derefed.shouldUpdate();
         })
         .reduce((acc, v) => acc || v, false);
 }
 
 function needUpdate(obj) {
-     //console.log('Need update', obj.getDisplayName());
+    //console.log('Need update', obj.getDisplayName());
     data.toUpdate.push([obj.state.renderOrder, ()=> {
         if (shouldUpdateByDerefed(obj.state.derefed)) {
             // console.log('Force update', obj.getDisplayName());
@@ -53,26 +53,8 @@ export let StatelessMixin = {
     }
 };
 
-export let SubscriptionMixin = {
-    derefSub(subVec) {
-        return this.deref(subs.subscribe(subVec));
-    },
-    getDisplayName: function () {
-        return this.constructor.displayName;
-    },
-    getInitialState: function () {
-        return {
-            derefed: [],
-            renderOrder: data.renderOrder++
-        };
-    },
-    shouldComponentUpdate: function (nextProps, nextState) {
-        let updateByProps = shouldUpdate(this.props, nextProps, ['argv']) || shouldUpdate(this.props.argv, nextProps.argv),
-            updateByState = shouldUpdate(this.state, nextState, ['derefed', 'renderOrder']);
-
-        return updateByProps || updateByState;
-    },
-    deref: function (rx, aTransform) {
+class DerefedSubscription {
+    constructor(view, rx, aTransform, renderCycle) {
         let transform = aTransform || (a=>a),
             replay = new Rx.ReplaySubject(1),
             subj = new Rx.BehaviorSubject();
@@ -86,25 +68,90 @@ export let SubscriptionMixin = {
             replay
                 .skip(1)
                 .subscribe(() => {
-                    needUpdate(this);
+                    needUpdate(view);
                 }));
-        this.state.derefed.push([
-            subj,
-            subj.getValue(),
-            disposable
-        ]);
-        return subj.getValue();
+
+        this.disposable = disposable;
+        this.subject = subj;
+        this.renderCycle = null;
+    }
+    getValue(renderCycle) {
+        this.renderCycle = renderCycle;
+        this.lastValue = this.subject.getValue();
+        return this.lastValue;
+    }
+    dispose() {
+        this.disposable.dispose();
+    }
+    shouldDispose(renderCycle) {
+        return renderCycle > this.renderCycle;
+    }
+    shouldUpdate() {
+        return this.lastValue  !== this.subject.getValue();
+    }
+}
+
+function S4() {
+    return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
+};
+
+// Generate a pseudo-GUID by concatenating random hexadecimal.
+function guid() {
+    return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
+};
+
+export let SubscriptionMixin = {
+    derefSub(subVec, transform) {
+        return this.deref(subs.subscribe(subVec), transform, Immutable.List(subVec));
+    },
+    getDisplayName: function () {
+        return this.constructor.displayName;
+    },
+    getInitialState: function () {
+        return {
+            derefed: Immutable.Map(),
+            renderOrder: data.renderOrder++,
+            renderCycle: 0
+        };
+    },
+    shouldComponentUpdate: function (nextProps, nextState) {
+        let updateByProps = shouldUpdate(this.props, nextProps, ['argv']) || shouldUpdate(this.props.argv, nextProps.argv),
+            updateByState = shouldUpdate(this.state, nextState, ['derefed', 'renderOrder', 'renderCycle']);
+
+        return updateByProps || updateByState;
+    },
+    deref: function (rx, aTransform, aId) {
+        const id = aId || guid();
+        if (this.state.derefed.get(id)) {
+            return this.state.derefed.get(id).getValue(this.state.renderCycle);
+        }
+        const derefed = new DerefedSubscription(this, rx, aTransform);
+
+        this.state.derefed = this.state.derefed.set(id, derefed);
+
+        return derefed.getValue(this.state.renderCycle);
     },
     unsubscribe: function () {
-        this.state.derefed.forEach(([_1, _2, subscription]) => {
-            subscription.dispose();
+        this.state.derefed.forEach(derefed => {
+            derefed.dispose();
         });
 
-        this.state.derefed = [];
+        this.state.derefed = Immutable.Map();
     },
     componentWillUpdate: function () {
         // console.log('Rendering', this.getDisplayName());
-        this.unsubscribe();
+        this.state.renderCycle++;
+        //this.unsubscribe();
+    },
+    componentDidUpdate: function() {
+        this.state.derefed.filter(derefed => {
+            return derefed.shouldDispose(this.state.renderCycle);
+        })
+        .forEach(item => item.dispose());
+
+        this.state.derefed = this.state.derefed.filter(derefed => {
+            return !derefed.shouldDispose(this.state.renderCycle);
+        });
     },
     componentWillUnmount: function () {
         this.unsubscribe();

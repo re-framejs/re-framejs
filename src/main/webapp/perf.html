@@ -12,6 +12,152 @@
 <body>
 jhah dasf asf
 <div id="app"></div>
-    <script src="js/perf.bundle.js"></script>
+<script src="../../../node_modules/react/dist/react.min.js"></script>
+<script src="../../../node_modules/react-dom/dist/react-dom.min.js"></script>
+<script src="../../../node_modules/immutable/dist/immutable.min.js"></script>
+<script src="../../../node_modules/rx/dist/rx.all.min.js"></script>
+<script src="../../../dist/reframe.js"></script>
+<script>
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    function random(limit) {
+        return Math.floor(Math.random() * limit);
+    }
+    function randomLetter() {
+        return letters.charAt(random(letters.length));
+    }
+
+    var layout = [];
+    var size = 100;
+
+    for (var y = 0; y < size; y++) {
+        layout[y] = [];
+        for (var x = 0; x < size; x++) {
+            layout[y][x] = {
+                letter: randomLetter(),
+                active: false
+            };
+        }
+    }
+    reframe.registerHandler('initDb', function (db) {
+        return Immutable.fromJS({layout: layout});
+    })
+    ;
+    reframe.registerHandler('update', function (db, cmd) {
+        var y = cmd[1];
+        var x = cmd[2];
+        return db.updateIn(['layout', y, x, 'active'], function (active) {
+            return !active;
+        });
+    });
+
+    //reframe.registerSub('row', (rx, [rvtId, y]) => rx.map(db=>db.getIn(['layout', y], Immutable.List())));
+    //reframe.registerSub('cell', (rx, [evtId, y, x]) => {
+    //        return rx.map(db => db.getIn(['layout', y, x], Immutable.Map()));
+    //    }
+    //);
+    reframe.registerSub('cell', function (rx, cmd) {
+        var y = cmd[1];
+        var x = cmd[2];
+        return reframe.indexPath(['layout', y, x]);
+    });
+
+    reframe.dispatchSync(['initDb']);
+
+    var rowCount = size,
+            colCount = rowCount;
+    var Cell = reframe.viewSV('Cell', function (y, x) {
+        var cell = this.derefSub(['cell', y, x]);
+        //var cell = this.deref(this.props.row, r => r.get(this.props.x, Immutable.Map()));
+        return React.DOM.td(
+                {className: cell.get('active') ? 'active' : 'inactive'},
+                cell.get('letter')
+        );
+    });
+
+    var Row = reframe.viewP('Row', {
+        getInitialState: function () {
+            return {};
+        },
+        render: function () {
+            var row = [];
+            for (var x = 0; x < colCount; x++) {
+                row.push(Cell(this.props.y, x));
+            }
+            return React.DOM.tr.apply(null, [null].concat(row));
+        }
+    });
+
+    var TableView = reframe.viewP('Table', function () {
+
+        var rows = [];
+        for (var y = 0; y < rowCount; y++) {
+            rows.push(Row({y: y}));
+        }
+
+        return React.DOM.table(null, React.DOM.tbody.apply(null, [null].concat(rows)));
+    });
+
+    React.render(TableView(), document.getElementById('app'));
+
+
+    window.updateRandom = function () {
+        var x = random(size) + '';
+        var y = random(size) + '';
+
+        reframe.dispatch(['update', y, x]);
+    };
+
+    var startTime = performance.now(),
+            count = 0,
+            batchSize = 1;
+
+    /* eslint-disable no-console */
+    //var a = [];
+    function update(ms) {
+        for (var i = 0; i < batchSize; i++) {
+            window.updateRandom();
+        }
+        // setTimeout(update, ms);
+        var end = performance.now();
+
+        if (end - startTime > 2000) {
+            console.log(count / ((end - startTime) / 1000), (end - startTime), count);
+            startTime = performance.now();
+            count = 0;
+        }
+        count += batchSize;
+    }
+    /* eslint-enable no-console */
+
+
+    window.start = function () {
+        // update(0, 1);
+        setInterval(update, 0);
+    };
+
+    //var o = Rx.Observable
+    //    .fromArray([1,2,3])
+    //    .observeOn(Rx.Scheduler.default)
+    //    .doOnNext(i => console.log(i))
+    //    .subscribe();
+    //console.log('after');
+
+    //var o = Rx.Observable
+    //    .fromArray([1,2,3])
+    //    .doOnNext(v => {
+    //        console.log('1:', v);
+    //    });
+    //
+    //var x = new Rx.ReplaySubject();
+    //o.subscribe(x);
+    //
+    //x.subscribe(v => {
+    //    console.log('2:', v);
+    //});
+    //x.subscribe(v => {
+    //    console.log('3:', v);
+    //});
+
+</script>
 </body>
 </html>

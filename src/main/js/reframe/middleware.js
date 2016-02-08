@@ -1,6 +1,6 @@
 'use strict';
 
-let immutablediff = require('immutablediff');
+const immutablediff = require('immutablediff');
 
 /* eslint-disable no-console */
 export function debug(handler) {

@@ -12,7 +12,6 @@ module.exports.registerSub = subs.registerSub;
 module.exports.subscribe = subs.subscribe;
 module.exports.indexPath = subs.indexPath;
 module.exports.db$ = db.db$;
-module.exports.ReframeMixin = react.ReframeMixin;
 module.exports.viewP = react.viewP;
 module.exports.viewV = react.viewV;
 module.exports.viewSP = react.viewSP;

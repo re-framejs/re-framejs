@@ -29,9 +29,8 @@ export class Index {
                         subscription = parentRx
                             .map(a => {
                                 if (a && a.get) {
-                                    return a.get(lastFragment, def);
+                                    return a.get(lastFragment);
                                 }
-                                return def;
                             })
                             .distinctUntilChanged(x => x, (x, y) => x === y)
                             //.doOnNext(v => console.log('v', v.toJS()))
@@ -54,7 +53,7 @@ export class Index {
             this.listeners
         );
 
-        return this.listeners.getIn(path.concat([LISTENER_SENTINEL])).map(a => a ? a : def);
+        return this.listeners.getIn(path.concat([LISTENER_SENTINEL])).map(a => typeof a !== 'undefined' ? a : def);
     }
 }
 

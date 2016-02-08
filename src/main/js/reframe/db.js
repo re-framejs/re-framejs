@@ -1,2 +1,3 @@
 import * as Rx from 'rx';
-export const db$ = new Rx.BehaviorSubject();
+import * as Immutable from 'immutable';
+export const db$ = new Rx.BehaviorSubject(Immutable.Map());

@@ -1,11 +1,24 @@
+'use strict';
+
 import {db$} from 'reframe/db.js';
 import * as Rx from 'rx';
-import {animationFrame$, sync$, subscribe} from 'reframe/subs.js';
+import {animationFrame$, sync$} from 'reframe/subs.js';
 import {Dispatcher} from 'reframe/dispatcher.js';
 import * as Immutable from 'immutable';
 
 const commandDispatcher = new Dispatcher();
 const cmd$ = new Rx.Subject();
+
+export function compMiddleware(middlewares) {
+    return handler => {
+        let compHandler = middlewares.reverse().filter(a => a).reduce(
+            (acc, middleware) => middleware(acc),
+            handler
+        );
+
+        return compHandler;
+    };
+}
 
 export function registerHandler() {
     let eventId, middleware, handlerFn;
@@ -25,24 +38,15 @@ export function registerHandler() {
             throw new Error('Expected 2 or 3 arguments, got ' + arguments.length);
     }
 
-    commandDispatcher.register(eventId, middleware(handlerFn))
+    commandDispatcher.register(eventId, middleware(handlerFn));
 }
 
 export function dispatch(cmd) {
     cmd$.onNext([false, cmd]);
 }
+
 export function dispatchSync(cmd) {
     cmd$.onNext([true, cmd]);
-}
-export function compMiddleware(middlewares) {
-    return handler => {
-        let compHandler = middlewares.reverse().filter(a => a).reduce(
-            (acc, middleware) => middleware(acc),
-            handler
-        );
-
-        return compHandler;
-    };
 }
 
 cmd$
@@ -54,13 +58,14 @@ cmd$
 
             if (newDb !== db) {
                 db$.onNext(newDb);
+                const nextVersion = version + 1;
                 if (sync) {
-                    sync$.onNext([version, newDb]);
+                    sync$.onNext([nextVersion, newDb]);
                 } else {
-                    animationFrame$.onNext([version, newDb]);
+                    animationFrame$.onNext([nextVersion, newDb]);
                 }
 
-                return [version + 1, newDb];
+                return [nextVersion, newDb];
             }
             return [version, db];
         },

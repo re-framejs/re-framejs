@@ -7,6 +7,9 @@
         .active {
             background: yellow;
         }
+        td {
+            font-size: 5px;
+        }
     </style>
 </head>
 <body>
@@ -16,7 +19,9 @@ jhah dasf asf
 <script src="../../../node_modules/react-dom/dist/react-dom.min.js"></script>
 <script src="../../../node_modules/immutable/dist/immutable.min.js"></script>
 <script src="../../../node_modules/rx/dist/rx.all.min.js"></script>
-<script src="../../../dist/reframe.js"></script>
+<!--<script src="../../../dist/reframe.js"></script>-->
+<script src="http://localhost:8080/js/reframe.js"></script>
+
 <script>
     var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     function random(limit) {
@@ -109,7 +114,7 @@ jhah dasf asf
 
     var startTime = performance.now(),
             count = 0,
-            batchSize = 1;
+            batchSize = 100;
 
     /* eslint-disable no-console */
     //var a = [];
@@ -132,6 +137,9 @@ jhah dasf asf
 
     window.start = function () {
         // update(0, 1);
+//        while(true) {
+//            update()
+//        }
         setInterval(update, 0);
     };
 

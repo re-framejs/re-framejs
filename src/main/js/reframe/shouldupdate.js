@@ -16,7 +16,7 @@ export function shouldUpdate(props, nextProps, ignore) {
     }
     if (ignore && ignore.length > 0) {
         entries = Object.keys(props)
-            .filter(k => ignore.indexOf(k) >= 0)
+            .filter(k => ignore.indexOf(k) === -1)
             .map(k => [props[k], nextProps[k]]);
     } else {
         entries = Object.keys(props).map(k => [props[k], nextProps[k]]);

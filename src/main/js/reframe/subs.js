@@ -2,18 +2,27 @@ import * as Rx from 'rx-dom';
 import {Dispatcher} from 'reframe/dispatcher.js';
 import {Index} from 'reframe/subindex.js';
 
-export const animationFrame$ = new Rx.Subject();
+export const animationFrame$ = new Rx.BehaviorSubject();
+const animationFrame$1 = new Rx.Subject();
 export const sync$ = new Rx.Subject();
 const requestRender$ = new Rx.BehaviorSubject();
 export const render$ = new Rx.Subject();
 
+var scheduled = false;
+animationFrame$
+    .filter(Boolean)
+    .doOnNext(v => {
+    if (!scheduled) {
+        requestAnimationFrame(() => {
+            animationFrame$1.onNext(animationFrame$.getValue());
+            scheduled = false;
+        });
+        scheduled = true;
+    }
+}).subscribe();
+
 Rx.Observable
-    .merge(
-        animationFrame$
-        .throttleLatest(1/60, Rx.Scheduler.requestAnimationFrame),
-        //.observeOn(Rx.Scheduler.requestAnimationFrame),
-        sync$
-    )
+    .merge(animationFrame$1, sync$)
     .scan(([oldVersion, oldDb], [newVersion, newDb])=> {
         if (newVersion > oldVersion) {
             return [newVersion, newDb];

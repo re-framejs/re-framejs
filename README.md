@@ -319,37 +319,38 @@ While the mechanics are different, rx `operator` has the intent of `lift` in [El
 
 Right, so that was a lot of words. Some code to clarify:
 
-```Clojure
-(ns example1
- (:require-macros [reagent.ratom :refer [reaction]])  ;; reaction is a macro
- (:require        [reagent.core  :as    reagent]))
+```javascript
+import * as reframe from 'reframe';
+import * as Immutable from 'immutable';
 
-(def app-db  (reagent/atom {:a 1}))           ;; our root ratom  (signal)
+const db$ = reframe.atom(Immutable.Map({a: 1})); //  our root atom  (signal)
+const atom2 = db$.map(db => Immutable.Map({b: db.get('a')})); map wraps a computation, returns a signal
+const atom3 = atom2.map(db => {
+    if (db.get('b') === 0) {
+       return 'World';
+    } else if (db.get('b') === 1) {
+       return 'Hello';
+    }
+  }); // map wraps another computation
 
-(def ratom2  (reaction {:b (:a @app-db)}))    ;; reaction wraps a computation, returns a signal
-(def ratom3  (reaction (condp = (:b @ratom2)  ;; reaction wraps another computation
-                             0 "World"
-                             1 "Hello")))
 
-;; Notice that both computations above involve de-referencing a ratom:
-;;   - app-db in one case
-;;   - ratom2 in the other
-;; Notice that both reactions above return a ratom.
-;; Those returned ratoms hold the (time varying) value of the computations.
+// Notice that both transformations above return a new stream.
+// Those new streams hold the (time varying) value of the computations.
 
-(println @ratom2)    ;; ==>  {:b 1}       ;; a computed result, involving @app-db
-(println @ratom3)    ;; ==> "Hello"       ;; a computed result, involving @ratom2
+console.log(reframe.deref(atom2).toJS());     // ==>  {:b 1}       ;; a computed result, involving db$
+console.log(reframe.deref(atom3).toJS());     // ==> "Hello"       ;; a computed result, involving atom2
 
-(reset!  app-db  {:a 0})       ;; this change to app-db, triggers re-computation
-                               ;; of ratom2
-                               ;; which, in turn, causes a re-computation of ratom3
 
-(println @ratom2)    ;; ==>  {:b 0}    ;; ratom2 is result of {:b (:a @app-db)}
-(println @ratom3)    ;; ==> "World"    ;; ratom3 is automatically updated too.
+reframe.reset(db$, Immutable.Map({a: 0}));    // this change to db$, triggers re-computation
+                               // of atom2
+                               // which, in turn, causes a re-computation of atom3
+
+console.log(reframe.deref(atom2).toJS());     // ==>  {:b 0}       ;; atom2 is a computed result, involving db$
+console.log(reframe.deref(atom3).toJS());     // ==> "World"       ;; atom3 is automatically updated too
 ```
 
-So, in FRP-ish terms, a `reaction` will produce a "stream" of values over time (it is a Signal),
-accessible via the `ratom` it returns.
+So, in FRP-ish terms, an `operator` will produce a "stream" of values over time (it is a Signal),
+accessible via the `stream` it returns.
 
 
 Okay, that was all important background information for what is to follow. Back to the diagram ...
@@ -359,123 +360,90 @@ Okay, that was all important background information for what is to follow. Back 
 Extending the diagram, we introduce `components`:
 
 ```
-app-db  -->  components  -->  Hiccup
+db$  -->  components  -->  ReactDOM
 ```
 
-When using Reagent, your primary job is to write one or more `components`. This is the view layer.
+When using React, your primary job is to write one or more `components`. This is the view layer.
 
-Think about `components` as `pure functions` - data in, Hiccup out.  `Hiccup` is
-ClojureScript data structures which represent DOM. Here's a trivial component:
+Think about `components` as `pure functions` - data in, ReactDOM out.  `ReactDOM` is
+data structures which represent DOM. Here's a trivial component:
 
-```Clojure
-(defn greet
-  []
-  [:div "Hello ratoms and reactions"])
+```javascript
+const greet = () => React.DOM.div(null, 'Hello ratoms and reactions');
 ```
 
 And if we call it:
 
-```Clojure
-(greet)
-;; ==>  [:div "Hello ratoms and reactions"]
+```javascript
+React.renderToStaticMarkup(greet());
+// ==> "<div>Hello ratoms and reactions</div>"
 ```
 
-You'll notice that our component is a regular Clojure function, nothing special. In this case, it takes
-no parameters and it returns a ClojureScript vector (formatted as Hiccup).
+You'll notice that our component is a regular Javascript function, nothing special.
 
-Here is a slightly more interesting (parameterised) component (function):
+Here is a slightly more interesting (parameterised) component (function) using re-framejs react view function:
 
-```Clojure
-(defn greet                    ;; greet has a parameter now
-  [name]                       ;; 'name' is a ratom  holding a string
-  [:div "Hello "  @name])      ;; dereference 'name' to extract the contained value
+```javascript
+const greet = (name$) => { // greet has a parameter name$ holding a string
+   return React.DOM.div(null, 'Hello ' + reframe.deref(name$)); // deref name$ returns current value from the stream
+};
 
-;; create a ratom, containing a string
-(def n (reagent/atom "re-framejs"))
+// create an atom, containing a string
+const n = reframe.atom('re-framejs');
 
-;; call our `component` function, passing in a ratom
-(greet n)
-;; ==>  [:div "Hello " "re-framejs"]    returns a vector
+// call our `component` function, passing in an atom
+React.renderToStaticMarkup(greet(n));
+// ==>  "<div>Hello re-framejs</div>"
 ```
 
 So components are easy - at core they are a render function which turns data into
-Hiccup (which will later become DOM).
+ReactDOM (which will later become DOM).
 
-Now, let's introduce `reaction` into this mix.  On the one hand, I'm complicating things
-by doing this, because Reagent allows you to be ignorant of the mechanics I'm about to show
-you. (It invisibly wraps your components in a `reaction` allowing you to be blissfully
-ignorant of how the magic happens.)
+Now, let's introduce `component reaction` into this mix. If want component to be re-renderd we need to call `forceUpdate`
+on the react component. As we need to wire up stream with react component and also get current value for render, we can
+use re-framejs built-in function `view`:
 
-On the other hand, it is useful to understand exactly how the Reagent Signal graph is wired,
-because in a minute, when we get to `subscriptions`, we'll be directly using `reaction`, so we
-might as well bite the bullet here and now ... and, anyway, it is pretty easy...
+```
+// our view function is now wrapped with reframe.view
+const greet = reframe.view('Greet', function(name$) {
+   return React.DOM.div(null, 'Hello ' + this.deref(name$)); // we call deref directly on react component to bind it to stream
+});
 
-```Clojure
-(defn greet                ;; a component - data in, Hiccup out.
-  [name]                   ;; name is a ratom
-  [:div "Hello "  @name])  ;; dereference name here, to extract the value within
+const greet = reframe.view('Greet', (name$) => {
+   return React.DOM.div(null, 'Hello ' + this.deref(name$)); // we call deref directly on react component to bind it to stream
+});
 
-(def n (reagent/atom "re-framejs"))
+const n = reframe.atom('re-framejs');
 
-;; The computation '(greet n)' returns Hiccup which is stored into 'hiccup-ratom'
-(def hiccup-ratom  (reaction (greet n)))    ;; <-- use of reaction !!!
+// create react component, fix it to current n value
+const component = greet(n);
 
-;; what is the result of the initial computation ?
-(println @hiccup-ratom)
-;; ==>  [:div "Hello " "re-framejs"]    ;; returns hiccup  (a vector of stuff)
+React.renderToStaticMarkup(component);
+// ==>  "<div>Hello re-framejs</div>"
 
-;; now change 'n'
-;; 'n' is an input Signal for the reaction above.
-;; Warning: 'n' is not an input signal because it is a parameter. Rather, it is
-;; because 'n' is dereferenced within the execution of the reaction's computation.
-;; reaction notices what ratoms are dereferenced in its computation, and watches
-;; them for changes.
-(reset! n "blah")            ;;    n changes
+// change current name
+reframe.reset(n, 'blah');
 
-;; The reaction above will notice the change to 'n' ...
-;; ... and will re-run its computation ...
-;; ... which will have a new "return value"...
-;; ... which will be "reset!" into "hiccup-ratom"
-(println @hiccup-ratom)
-;; ==>   [:div "Hello " "blah"]    ;; yep, there's the new value
+// rerender the same component, should render current changed value
+React.renderToStaticMarkup(component);
+// ==>  "<div>Hello blah</div>"
 ```
 
-So, as `n` changes value over time (via a `reset!`), the output of the computation `(greet n)`
-changes, which in turn means that the value in `hiccup-ratom` changes. Both `n` and
-`hiccup-ratom` are FRP Signals. The Signal graph we created causes data to flow from
-`n` into `hiccup-ratom`.
+So, as `n` changes value over time (via a `reset`), changes are subscribed (by `this.deref call`) in the component,
+which in turn rerenders itself on stream changes. This is FRP.
 
 Derived Data, flowing.
-
-
-### Truth Interlude
-
-I haven't been entirely straight with you:
-
- 1. Reagent re-runs `reactions` (re-computations) via requestAnimationFrame. So a
-re-computation happens about 16ms after an input Signals change is detected, or after the
-current thread of processing finishes, whichever is the greater. So if you are in a bREPL
-and you run the lines of code above one after the other too quickly,  you might not see the
-re-computation done immediately after `n` gets reset!, because the next animationFrame
-hasn't run (yet).  But you could add a `(reagent.core/flush)` after the reset! to force
-re-computation to happen straight away.
-
- 2. `reaction` doesn't actually return a `ratom`.  But it returns something that has
-ratom-nature, so we'll happily continue believing it is a `ratom` and no harm will come to us.
-
-On with the rest of my lies and distortions...
 
 ### Components Like Templates?
 
 A `component` such as `greet` is like the templates you'd find in
 Django, Rails, Handlebars or Mustache -- it maps data to HTML -- except for two massive differences:
 
-  1. you have the full power of ClojureScript available to you (generating a Clojure data structure). The
+  1. you have the full power of JavaScript available to you (generating a React DOM data structure). The
      downside is that these are not "designer friendly" HTML templates.
   2. these templates are reactive.  When their input Signals change, they
-     are automatically rerun, producing new DOM. Reagent adroitly shields you from the details, but
-     the renderer of any `component` is wrapped by a `reaction`.  If any of the the "inputs"
-     to that render change, the render is rerun.
+     are automatically rerun, producing new DOM. re-framejs adroitly shields you from the details.
+     If any of the the "inputs" to that render change, the render is rerun.
 
 ### React etc.
 
@@ -485,61 +453,46 @@ Question: To which ocean does this river of data flow?  Answer: The DOM ocean.
 
 The full picture:
 ```
-app-db  -->  components  -->  Hiccup  -->  Reagent  -->  VDOM  -->  React  --> DOM
+db$  -->  components  -->  VDOM (ReactDOM) -->  React  --> DOM
 ```
 
-Best to imagine this process as a pipeline of 3 functions.  Each
+Best to imagine this process as a pipeline of 2 functions.  Each
 function takes data from the
 previous step, and produces (derived!) data for the next step.  In the next
-diagram, the three functions are marked (f1, f2, f3). The unmarked nodes are derived data,
+diagram, the three functions are marked (f1, f2). The unmarked nodes are derived data,
 produced by one step, to be input to the following step.  Hiccup,
 VDOM and DOM are all various forms of HTML markup (in our world that's data).
 
 ```
-app-db  -->  components  -->  Hiccup  -->  Reagent  -->  VDOM  -->  React  -->  DOM
-               f1                           f2                      f3
+db$  -->  components  -->   VDOM  -->  React  -->  DOM
+               f1                           f2
 ```
-
-In abstract ClojureScript syntax terms, you could squint and imagine the process as:
-
-```Clojure
-(-> app-db
-   components    ;; produces Hiccup
-   Reagent       ;; produces VDOM   (virtual DOM that React understands)
-   React         ;; produces HTML   (which magically and efficiently appears on the page).
-   Browser       ;; produces pixels
-   Monitor)      ;; produces photons?
-```
-
-
-Via the interplay between `ratom` and `reaction`, changes to `app-db` stream into the pipeline, where it
-undergoes successive transformations, until pixels colour the monitor you to see.
 
 Derived Data, flowing.  Every step is acting like a pure function and turning data into new data.
 
 All well and good, and nice to know, but we don't have to bother ourselves with most of the pipeline.
 We just write the `components`
-part and Reagent/React will look after the rest.  So back we go to that part of the picture ...
+part and re-framejs/React will look after the rest.  So back we go to that part of the picture ...
 
 
 ## Subscribe
 
-`components` render the app's state as hiccup.
+`components` render the app's state as ReactDOM.
 
 ```
-app-db  -->  components
+db$  -->  components
 ```
 
 
-`components` (view layer) need to query aspects of `app-db` (data layer).
+`components` (view layer) need to query aspects of `db$` (data layer).
 
 But how?
 
 Let's pause to consider **our dream solution** for this part of the flow. `components` would:
-  * obtain data from `app-db`  (their job is to turn this data into hiccup).
-  * obtain this data via a (possibly parameterised) query over `app-db`. Think database kind of  query.
-  * automatically recompute their hiccup output, as the data returned by the query changes, over time
-  * use declarative queries. Components should know as little as possible about the structure of `app-db`. SQL?  Datalog?
+  * obtain data from `db$`  (their job is to turn this data into ReactDOM).
+  * obtain this data via a (possibly parameterised) query over `db$`. Think database kind of  query.
+  * automatically recompute their ReactDOM output, as the data returned by the query changes, over time
+  * use declarative queries. Components should know as little as possible about the structure of `db$`. SQL?  Datalog?
 
 re-framejs's `subscriptions` are an attempt to live this dream. As you'll see, they fall short on the declarative
 query part, but they comfortably meet the other requirements.
@@ -548,47 +501,26 @@ As a re-framejs app developer, your job will be to write and register one or mor
 "subscription handlers" - functions that do a named query.
 
 Your subscription functions must return a value that changes over time (a Signal). I.e. they'll
-be returning a reaction or, at least, the `ratom` produced by a `reaction`.
+be returning an Rx stream.
 
 Rules:
- - `components` never source data directly from `app-db`, and instead, they use a subscription.
+ - `components` never source data directly from `db$`, and instead, they use a subscription.
  - subscriptions are only ever used by components  (they are never used in, say, event handlers).
 
 Here's a component using a subscription:
 
-```Clojure
-(defn greet         ;; outer, setup function, called once
-  []
-  (let [name-ratom  (subscribe [:name-query])]    ;; <---- subscribing happens here
-     (fn []        ;; the inner, render function, potentially called many times.
-         [:div "Hello" @name-ratom])))
+```javascript
+const greet = reframe.view('Greet', (name$) => {
+   const value = this.derefSub(['name-query']); // <---- subscribing happens here
+   return React.DOM.div(null, 'Hello ' + value);
+});
 ```
-
-First, note this is a [Form-2](https://github.com/Day8/re-framejs/wiki/Creating-Reagent-Components#form-2--a-function-returning-a-function)
-`component` ([there are 3 forms](https://github.com/Day8/re-framejs/wiki/Creating-Reagent-Components)).
-
-Previously in this document, we've used the simplest, `Form-1` components (no setup was required, just render).
-With `Form-2` components, there's a function returning a function:
-- the returned function is the render function. Behind the scenes, Reagent will wrap this render function
- in a `reaction` to make it produce new Hiccup when its input Signals change.  In our example above, that
- means it will rerun every time `name-ratom` changes.
-- the outer function is a setup function, called once for each instance of the component. Notice the use of
- 'subscribe' with the parameter `:name-query`. That creates a Signal through which new values are supplied
- over time; each new value causing the returned function (the actual renderer) to be run.
-
->It is important to distinguish between a new instance of the component versus the same instance of a component reacting to a new value. Simplistically, a new component is returned for every unique value the setup function (i.e. the outer function) is called with. This allows subscriptions based on initialisation values to be created, for example:
-``` Clojure
-  (defn my-cmp [row-id]
-    (let [row-state (subscribe [row-id])]
-      (fn [row-id]
-        [div (str "Row: " row-id " is " @row-state)])))
-```
-In this example, `[my-cmp 1][my-cmp 2]` will create two instances of `my-cmp`. Each instance will re-render when its internal `row-state` signal changes.
 
 `subscribe` is always called like this:
 
-```Clojure
-   (subscribe  [query-id some optional query parameters])
+*CONTINUE FROM HERE*
+```javascript
+   reframe.subscribe([query-id, some optional query parameters...])
 ```
 
 There is only one (global) `subscribe` function and it takes one parameter, assumed to be a vector.

@@ -139,12 +139,12 @@ insider's joke, conference T-Shirt.
 __First__, above all we believe in the one true [Dan Holmsand], creator of Reagent, and
 his divine instrument the `ratom`.  We genuflect towards Sweden once a day.
 
-__Second__, we believe in ClojureScript, immutable data and the process of building
+__Second__, we believe in immutable data and the process of building
 a system out of pure functions.
 
 __Third__, we believe that [FRP] is one honking great idea. You might be tempted to see
 Reagent as simply another of the React wrappers - a sibling to [OM] and
-[quiescent](https://github.com/levand/quiescent).
+[omniscient](http://omniscientjs.github.io/).
 But you'll only really "get"
 Reagent when you view it as an FRP-ish library. To put that another way, I think
 that Reagent, at its best, is closer in nature to [Hoplon] or [Elm] than it is OM.
@@ -206,10 +206,10 @@ reagent tutorial and you will need to have done one of those before continuing h
 Our re-framejs diagram starts (very modestly) with  Fogus' ***well-formed data at rest*** bit:
 
 ```
-app-db
+db$
 ```
 
-re-framejs says that you put your data into one place which we'll call `app-db`. Structure
+re-framejs says that you put your data into one place which we'll call `db$`. Structure
 the data in that place, of course, and [give it a schema](https://github.com/Prismatic/schema).
 
 Now, this advice is not the slightest bit controversial for 'real' databases, right?
@@ -220,28 +220,28 @@ application (in memory), it is different. If you have a background in OO, this d
 business is a really, really hard one to swallow.  You've
 spent your life breaking systems into pieces, organised around behaviour and trying
 to hide the data.  I still wake up in a sweat some nights thinking about all
-that Clojure data lying around exposed and passive.
+that JSON data lying around exposed and passive.
 
 But, as Fogus reminds us, data at rest is the easy bit. Believe.
 
-From here on in this document, we'll assume `app-db` is one of these:
+From here on in this document, we'll assume `db$` is one of these:
 
-```Clojure
-(def app-db  (reagent/atom {}))    ;; a Reagent atom, containing a map
+```javascript
+const db$ = reframe.atom(Immutable.Map()); ;; atom, containing an immutable map
 ```
 
-Although it is a `Reagent atom` (hereafter `ratom`), I'd encourage you to think of it as an in-memory database.
+Atom in re-framejs is mutable wrappper of immutable data. I'd encourage you to think of it as an in-memory database.
 It will contain structured data. You will need to query that data. You will perform CRUD
 and other transformations on it. You'll often want to transact on this
 database atomically, etc.  So "in-memory database"
 seems a more useful paradigm than plain old map-in-atom.
 
-A clarification:  `app-db` doesn't actually have to be a reagent/atom containing
+A clarification:  `db$` doesn't actually have to be a atom containing
 a map.  It could, for example, be a [datascript] database.  In fact, any database which is reactive
 (can tell you when it changes) would do.  (We'd love! to be using [datascript] - so damn cool -
 but we had too much
 data in our apps. If you were to use it, you'd have to tweak the reference implementation a bit,
-[perhaps using this inspiration](https://gist.github.com/allgress/11348685)).  The reference implementation already creates and manages an internal `app-db` for you, you don't need to declare one yourself.
+[perhaps using this inspiration](https://gist.github.com/allgress/11348685)).  The reference implementation already creates and manages an internal `db$` for you, you don't need to declare one yourself.
 
 
 ### The Benefits Of Data-In-The-One-Place
@@ -292,45 +292,30 @@ your neck, read it again until it does, because it is important.
 Steve Grand
 
 
-### How Flow Happens In Reagent
+### How Flow Happens In re-framejs
 
-To implement FRP, Reagent provides a `ratom` and a `reaction`.
-re-framejs uses both of these
-building blocks, so let's now make sure we understand them.
+To implement FRP, re-framejs provides an `atom`. Atom is `BehaviorSubject` from RxJS.
 
-`ratoms` behave just like normal ClojureScript atoms. You can `swap!` and `reset!` them, `watch` them, etc.
+From Rx's perspective `atom` just holds the last value of the stream. Let's tweak that paradigm slightly and **view an
+`atom` as haviang a value that changes over time.** Seems like a subtle distinction, I know, but because of it, re-framejs sees an
+`atom` as a Signal. [Pause and read this](http://elm-lang.org/learn/What-is-FRP.elm).
 
-From a ClojureScript perspective, the purpose of an atom is to hold mutable data.  From a re-framejs
-perspective, we'll tweak that paradigm slightly and **view a `ratom` as having a value that
-changes over time.**  Seems like a subtle distinction, I know, but because of it, re-framejs sees a
-`ratom` as a Signal. [Pause and read this](http://elm-lang.org/learn/What-is-FRP.elm).
+re-framejs adds `swap` and `reset` functions for changing value of the `atom`.
 
-The 2nd building block, `reaction`, acts a bit like a function. It's a macro which wraps some
-`computation` (a block of code) and returns a `ratom` holding the result of that `computation`.
+Now let's focus on signal transformation. You can use Rx `map` operator for computation of derived values. This operator
+takes function accepting current stream value, returning new value. This new value is wrapped inside Rx stream, so you can chain
+transformation like you want. The magic thing about Rx operators is that they will be re-run whenever 'they input' change,
+producing a new output value.
 
-The magic thing about a `reaction` is that the `computation` it wraps will be automatically
-re-run  whenever 'its inputs' change, producing a new output (return) value.
+You can chain rx operators arbitrary producing as many streams as you want. You can view each stream as a kind of
+'materialized view' from database terminology.
 
-Eh, how?
-
-Well, the `computation` is just a block of code, and if that code dereferences one or
-more `ratoms`, it will be automatically re-run (recomputing a new return value) whenever any
-of these dereferenced `ratoms` change.
-
-To put that yet another way, a `reaction` detects a `computation's` input Signals (aka input `ratoms`)
-and it will `watch` them, and when, later, it detects a change in one of them,  it will re-run that
-computation, and it will `reset!` the new result of that computation into the `ratom` originally returned.
-
-So, the `ratom` returned by a `reaction` is itself a Signal. Its value will change over time when
-the `computation` is re-run.
-
-So, via the interplay between `ratoms` and `reactions`,  values 'flow' into computations and out
-again, and then into further computations, etc.  "Values" flow (propagate) through the Signal graph.
+We call this chains Signal graph. "Values" flow (propagate) through the Signal graph.
 
 But this Signal graph must be without cycles, because cycles cause mayhem!  re-framejs achieves
 a unidirectional flow.
 
-While the mechanics are different, `reaction` has the intent of `lift` in [Elm] and `defc=` in [Hoplon].
+While the mechanics are different, rx `operator` has the intent of `lift` in [Elm] and `defc=` in [Hoplon].
 
 Right, so that was a lot of words. Some code to clarify:
 

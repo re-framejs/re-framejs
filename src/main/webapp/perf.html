@@ -19,8 +19,8 @@ jhah dasf asf
 <script src="../../../node_modules/react-dom/dist/react-dom.min.js"></script>
 <script src="../../../node_modules/immutable/dist/immutable.min.js"></script>
 <script src="../../../node_modules/rx/dist/rx.all.min.js"></script>
-<!--<script src="../../../dist/reframe.js"></script>-->
-<script src="http://localhost:8080/js/reframe.js"></script>
+<script src="../../../dist/reframe.js"></script>
+<!--<script src="http://localhost:8080/js/reframe.js"></script>-->
 
 <script>
     var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -109,12 +109,12 @@ jhah dasf asf
         var x = random(size) + '';
         var y = random(size) + '';
 
-        reframe.dispatch(['update', y, x]);
+        reframe.dispatchSync(['update', y, x]);
     };
 
     var startTime = performance.now(),
             count = 0,
-            batchSize = 100;
+            batchSize = 1;
 
     /* eslint-disable no-console */
     //var a = [];

@@ -8,3 +8,7 @@ export function atom(value) {
 export function swap(aAtom, update) {
     aAtom.onNext(update(aAtom.getValue()));
 }
+
+export function reset(aAtom, value) {
+    aAtom.onNext(value);
+}

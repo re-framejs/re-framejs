@@ -20,3 +20,4 @@ module.exports.view = react.viewSV;
 module.exports.deref = react.deref;
 module.exports.atom = atom.atom;
 module.exports.swap = atom.swap;
+module.exports.reset = atom.reset;

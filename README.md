@@ -518,7 +518,6 @@ const greet = reframe.view('Greet', (name$) => {
 
 `subscribe` is always called like this:
 
-*CONTINUE FROM HERE*
 ```javascript
    reframe.subscribe([query-id, some optional query parameters...])
 ```
@@ -533,45 +532,33 @@ select * from customers where name="blah"
 ```
 
 In re-framejs, that would be done as follows:
-   (subscribe  [:customer-query "blah"])
-which would return a `ratom` holding the customer state (a value which might change over time!).
+    reframe.subscribe(['customer-query', 'blah']);
+which would return an `atom` holding the customer state (a value which might change over time!).
 
-So let's now look at how to write and register the subscription handler for `:customer-query`
+So let's now look at how to write and register the subscription handler for `customer-query`
 
-```Clojure
-(defn customer-query     ;; a query over 'app-db' which returns a customer
-   [db, [sid cid]]      ;; query fns are given 'app-db', plus vector given to subscribe
-   (assert (= sid :customer-query))   ;; subscription id was the first element in the vector
-   (reaction (get-in @db [:path :to :a :map cid])))    ;; re-runs each time db changes
+```javascript
+// a query over 'app-db' which returns a customer
+function customerQuery(db$, [sid, cid]) {               // query fns are given 'db$', plus vector given to subscribe
+    assert(sid === 'customer-query')                    // subscription id was the first element in the vector
+    return db$.map(db => db.getIn(['path', 'to', 'map', cid])); // re-runs each time db changes
+};
 
-;; register our query handler
-(register-sub
-   :customer-query       ;; the id (the name of the query()
-   customer-query)       ;; the function which will perform the query
+reframe.registerSub(
+    'customer-query', // the id (the name of the query()
+    customerQuery // the function which will perform the query
+);
 ```
 
-Notice how the handler is registered to handle `:customer-query` subscriptions.
+Notice how the handler is registered to handle `customer-query` subscriptions.
 
 **Rules and Notes**:
  - you'll be writing one or more handlers, and you will need to register each one.
- - handlers are functions which take two parameters:  the db atom, and the vector given to subscribe.
+ - handlers are functions which take two parameters:  the db$ atom, and the vector given to subscribe.
  - `components` tend to be organised into a hierarchy, often with data flowing from parent to child via
 parameters. So not every component needs a subscription. Very often the values passed in from a parent component
 are sufficient.
- - subscriptions can only be used in `Form-2` components and the subscription must be in the outer setup
-function and not in the inner render function.  So the following is **wrong** (compare to the correct version above)
-
-```Clojure
-(defn greet         ;; a Form-1 component - no inner render function
-  []
-  (let [name-ratom  (subscribe [:name-query])]    ;; Eek! subscription in renderer
-       [:div "Hello" @name-ratom]))
-```
-
-Why is this wrong?  Well, this component would be re-rendered every time `app-db` changed, even if the value
-in `name-ratom` (the result of the query) stayed the same. If you were to use a `Form-2` component instead, and put the
-subscription in the outer functions, then there'll be no re-render unless the value queried (i.e. `name-ratom`) changed.
-
+ - subscriptions can only be used in reframe.view wrapped components correctly.
 
 ### Just A Read-Only Cursor?
 
@@ -579,9 +566,9 @@ Subscriptions are different to read-only cursors.
 
 Yes, `subscriptions` abstract away (hide) the data source, like a Cursor, but they also allow
 for computation. To put that another way, they can create
-derived data from `app-db` (a Materialised View of  `app-db`).
+derived data from `db$` (a Materialised View of  `db$`).
 
-Imagine that our `app-db` contained `:items` - a vector of maps. And imagine that we wanted to
+Imagine that our `db$` contained `items` - a vector of maps. And imagine that we wanted to
 display these items sorted by one of their attributes.  And that we only want to display the top 20 items.
 
 This is the sort of "derived data" which a subscription can deliver.
@@ -592,16 +579,16 @@ This is the sort of "derived data" which a subscription can deliver.
 Let's sketch out the situation described above ...
 
 
-`app-db` would be a bit like this (`items` is a vector of maps):
-```Clojure
-(def L  [{:name "a" :val 23 :flag "y"}
-        {:name "b" :val 81 :flag "n"}
-        {:name "c" :val 23 :flag "y"}])
+`db$` would be a bit like this (`items` is a vector of maps):
+```javascript
+const L = [{:name "a" :val 23 :flag "y"},
+           {:name "b" :val 81 :flag "n"},
+           {:name "c" :val 23 :flag "y"}];
 
-(def  app-db (reagent/atom  {:items L
-                            :sort-by :name}))     ;; sorted by the :name attribute
+const db$ = reframe.atom(Immutable.Map({items: L,
+                            'sort-by': 'name'}));     // sorted by the `name` attribute
 ```
-
+*CONTINUE HERE*
 The subscription-handler might be written:
 
 ```Clojure

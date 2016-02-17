@@ -588,32 +588,32 @@ const L = [{:name "a" :val 23 :flag "y"},
 const db$ = reframe.atom(Immutable.Map({items: L,
                             'sort-by': 'name'}));     // sorted by the `name` attribute
 ```
-*CONTINUE HERE*
+
 The subscription-handler might be written:
 
-```Clojure
-(register-sub
- :sorted-items      ;; the query id  (the name of the query)
- (fn [db [_]]       ;; the handler for the subscription
-   (reaction
-      (let [items      (get-in @db [:items])     ;; extract items from db
-            sort-attr  (get-in @db [:sort-by])]  ;; extract sort key from db
-          (sort-by sort-attr items)))))          ;; return them sorted
+```javascript
+reframe.registerSub('sortedItems', (db$, _) => db$.map(db => {
+    const items = db.get('items');       // extract items from db
+    const sortBy = db.get('sort-by');    // extract sort key from db
+    return items.sortBy(sortBy);         // return them sorted
+}));
 ```
 
 
 Subscription handlers are given two parameters:
 
-  1. `app-db` - that's a reagent/atom which holds ALL the app's state. This is the "database"
+  1. `db$` - that's a atom which holds ALL the app's state. This is the "database"
      on which we perform the "query".
   2. the vector originally supplied to `subscribe`.  In our case, we ignore it.
 
-In the example above, notice that the `reaction` depends on the input Signal:  `db`.
+In the example above, notice that the `map` depends on the input Signal:  `db`.
 If `db` changes, the query is re-run.
 
 In a component, we could use this query via `subscribe`:
 
-```Clojure
+*CONTINUE HERE*
+```javascript
+const itemsList =
 (defn items-list         ;; Form-2 component - outer, setup function, called once
   []
   (let [items   (subscribe [:sorted-items])   ;; <--   subscribe called with name

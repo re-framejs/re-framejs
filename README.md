@@ -61,10 +61,9 @@ Features:
 ## Using re-framejs
 
 
-[![Build Status](https://travis-ci.org/Day8/re-framejs.png?branch=master)](https://travis-ci.org/Day8/re-framejs)
 
-re-framejs is available from clojars. Add the following to your project dependencies:
-[![Clojars Project](http://clojars.org/re-framejs/latest-version.svg)](http://clojars.org/re-framejs)
+re-framejs is available currently from github. Add the following to your project dependencies:
+    {"re-framejs": "https://github.com/tomasd/re-framejs.git"}
 
 __Warning__:  That was the summary. What follows is a long-ish tutorial/explanation.
 

@@ -592,11 +592,13 @@ const db$ = reframe.atom(Immutable.Map({items: L,
 The subscription-handler might be written:
 
 ```javascript
-reframe.registerSub('sortedItems', (db$, _) => db$.map(db => {
+reframe.registerSub('sortedItems', (db$, [_, takeMax]) => db$.map(db => {
     const items = db.get('items');       // extract items from db
     const sortBy = db.get('sort-by');    // extract sort key from db
-    return items.sortBy(sortBy);         // return them sorted
+    return items.sortBy(sortBy).take(takeMax);         // return them sorted
 }));
+
+reframe.registerSub('itemsCount', (db$) => db$.map(db => db.get('items').size));
 ```
 
 
@@ -609,51 +611,48 @@ Subscription handlers are given two parameters:
 In the example above, notice that the `map` depends on the input Signal:  `db`.
 If `db` changes, the query is re-run.
 
-In a component, we could use this query via `subscribe`:
+In a component, we could use this query via `derefSub`:
 
 *CONTINUE HERE*
 ```javascript
-const itemsList =
-(defn items-list         ;; Form-2 component - outer, setup function, called once
-  []
-  (let [items   (subscribe [:sorted-items])   ;; <--   subscribe called with name
-        num     (reaction (count @items))     ;; Woh! a reaction based on the subscription
-        top-20  (reaction (take 20 @items))]  ;; Another dependent reaction
-     (fn []
-       [:div
-           (str "there's " @num " of these suckers. Here's top 20")     ;; rookie mistake to leave off the @
-           (into [:div ] (map item-render @top-20))])))   ;; item-render is another component, not shown
+const ItemsList = reframe.view('ItemsList', function() {
+   const num = this.derefSub(['itemsCount']);      // subscribe to number of items
+   const top20 = this.derefSub(['sortedItems', 20]);     // subscribe to first 20 items
+   return React.DOM.div(null,
+                  'there\'s ' + num + ' of these suckers. Here\'s top 20',
+                  React.DOM.div(null, top20.map(ItemRender)).toArray()); // ItemRender is another component
+});
 ```
 
-There's a bit going on in that `let`, most of it tortuously contrived, just so I can show off chained
-reactions. Okay, okay, all I wanted really was an excuse to use the phrase "chained reactions".
+The calculation of `num` is done by reaction to change on `items` as an input Signal.
 
-The calculation of `num` is done by a `reaction` which has `items` as an input Signal. And,
-as we saw, `items` is itself a reaction over two other signals (one of them the `app-db`).
+`top20` is a reaction to `items` change. Inside the handler items are sorted and subindex by the parameter.
 
-So this is a Signal Graph. Data is flowing through computation into renderer, which produce Hiccup, etc.
+So this is a Signal Graph. Data is flowing through computation into renderer, which produce React DOM, etc.
 
 ## A More Efficient Signal Graph
 
-But there is a small problem. The approach above might get inefficient, if `:items` gets long.
+But there is a small problem. The approach above might get inefficient, if `items` gets long.
 
-Every time `app-db` changes, the `:sorted-items` query is
-going to be re-run and it's going to re-sort `:items`.  But `:items` might not have changed. Some other
-part of `app-db` may have changed.
+Every time `db$` changes, the `sortedItems` query is
+going to be re-run and it's going to re-sort `items`.  But `items` might not have changed. Some other
+part of `db$` may have changed.
 
 We don't want to perform this computationally expensive re-sort
-each time something unrelated in `app-db` changes.
+each time something unrelated in `db$` changes.
 
 Luckily, we can easily fix that up by tweaking our subscription function so
 that it chains `reactions`:
 
-```Clojure
-(register-sub
- :sorted-items             ;; the query id
- (fn [db [_]]
-   (let [items      (reaction (get-in @db [:some :path :to :items]))]  ;; reaction #1
-         sort-attr  (reaction (get-in @db [:sort-by]))]                ;; reaction #2
-       (reaction (sort-by @sort-attr @items)))))                       ;; reaction #3
+```javascript
+reframe.registerSub('sortedItems', (db$, [_, takeMax]) => {
+   const items$ = db$.map(db => db.get('items')).distinctUntilChanged();       // reaction #1
+   const sortBy$ = db$.map(db => db.get('sortBy')).distinctUntilChanged(e=>e, Immutable.is);     // reaction #2
+   return Rx.Observable.combineLatest(items$, sortBy$)                         // reaction #3
+            .map((items, sortBy) => {
+               return items.sortBy(sortBy).take(takeMax);
+            });
+});
 ```
 
 The original version had only one `reaction` which would be re-run completely each time `app-db` changed.
@@ -663,24 +662,24 @@ But they are cheap. The 3rd one does the expensive
 computation using the result from the first two.
 
 That 3rd, expensive reaction will be re-run when either one of its two input Signals change, right?  Not quite.
-`reaction` will only re-run the computation when one of the inputs has **changed in value**.
+`reaction` will only re-run the computation when one of the inputs has **changed in value**
+(due to RX distinctUntilChanged operator).
 
-`reaction` compares the old input Signal value with the new Signal value using `identical?`. Because we're
+`distinctUntilChanged` compares the old input Signal value with the new Signal value using `Immutable.is`. Because we're
 using immutable data structures
-(thank you ClojureScript), `reaction` can perform near instant checks for change on even
+(Immutable-js), `reaction` can perform near instant checks for change on even
 deeply nested and complex
-input Signals. And `reaction` will then stop unneeded propagation of `identical?` values through the
+input Signals. And `reaction` will then stop unneeded propagation of `Immutable.is` values through the
 Signal graph.
 
-In the example above, reaction #3 won't re-run until `:items` or `:sort-by` are different
-(do not test `identical?`
-to their previous value), even though `app-db` itself has changed (presumably somewhere else).
+In the example above, reaction #3 won't re-run until `items` or `sortBy` are different,
+ even though `app-db` itself has changed (presumably somewhere else).
 
 Hideously contrived example, but I hope you get the idea. It is all screamingly efficient.
 
 Summary:
- - you can chain reactions.
- - a reaction will only be re-run when its input Signals test not identical? to previous value.
+ - you can chain reactions (rx streams).
+ - a reaction will only be re-run when its input Signals test not equal to previous value.
  - As a result, unnecessary Signal propagation is eliminated using highly efficient  checks,
    even for large, deep nested data structures.
 
@@ -689,7 +688,7 @@ Summary:
 
 At the top, I said that re-framejs had two data flows.
 
-The data flow from `app-db` to the DOM is the first half of the story. We now need to consider
+The data flow from `db$` to the DOM is the first half of the story. We now need to consider
 the 2nd part of the story: the flow in the opposite direction.
 
 While the first flow has FRP-nature, the 2nd flow does not.  Well, not at first glance anyway.
@@ -709,7 +708,7 @@ events like "clicked delete button on item 42" or
 "unticked the checkbox for 'send me spam'".
 
 These events have to be "handled".  The code doing this handling might
-mutate app state (in `app-db`), or request more data from the server, or POST somewhere and wait for a response, etc.
+mutate app state (in `db$`), or request more data from the server, or POST somewhere and wait for a response, etc.
 
 In fact, all these actions ultimately result in changes to the `app-db`.
 
@@ -719,7 +718,7 @@ they represent the **control layer of the application**.
 In re-framejs, the backwards data flow of events happens via a conveyor belt:
 
 ```
-app-db  -->  components  -->  Hiccup  -->  Reagent  -->  VDOM  -->  React  -->  DOM
+db$  --------->  components  --------->  VDOM  --------->  React  --------->  DOM
  ^                                                                              |
  |                                                                              v
  handlers <-------------------  events  -----------------------------------------
@@ -728,21 +727,21 @@ app-db  -->  components  -->  Hiccup  -->  Reagent  -->  VDOM  -->  React  -->  
 ```
 
 Generally, when the user manipulates the GUI, the state of the application changes. In our case,
-that means the `app-db` will change.  After all, it **is** the state.  And the DOM presented to
+that means the `db$` will change.  After all, it **is** the state.  And the DOM presented to
 the user is a function of that state.
 
 So that tends to be the cycle:
 
 1. the user clicks something which causes an event to be dispatched
 2. a handler manages the event
-3. and causes `app-db` to change   (mutation happens here!)
+3. and causes `db$` to change   (mutation happens here!)
 4. which then causes a re-render
 5. the user sees something different
 6. goto #1
 
 That's our water cycle.
 
-Because handlers are that part of the system which does `app-db` mutation, you
+Because handlers are that part of the system which does `db$` mutation, you
 could almost imagine them as a "stored procedures" on a
 database. Almost. Stretching it?  We do like our in-memory
 database analogies.
@@ -753,17 +752,17 @@ Events are data. You choose the format.
 
 In our reference implementation we choose a vector format. For example:
 
-   [:delete-item 42]
+   ['delete-item', 42]
 
 The first item in the vector identifies the event and
 the rest of the vector is the optional parameters -- in the example above, the id (42) of the item to delete.
 
 Here are some other example events:
 
-```Clojure
-   [:yes-button-clicked]
-   [:set-spam-wanted false]
-   [[:complicated :multi :part :key] "a parameter" "another one"  45.6]
+```javascript
+   ['yes-button-clicked']
+   ['set-spam-wanted', false]
+   ['multi-param-event', "a parameter", "another one",  45.6]
 ```
 
 **Rule**:  events are pure data. No dirty tricks like putting callback functions on the wire.
@@ -775,18 +774,19 @@ Events tend to start in the DOM in response to user actions.  They are `dispatch
 
 For example, a button component might be like this:
 
-```Clojure
-   (defn yes-button
-       []
-       [:div  {:class "button-class"
-               :on-click  #(dispatch [:yes-button-clicked])}
-               "Yes"])
+```javascript
+const YesButton = reframe.view('YesButton', function() {
+    return React.DOM.div({
+          className: 'button-class',
+          onClick: e => reframe.dispatch(['yes-button-clicked'])},
+          'Yes');
+});
 ```
 
-Notice the `on-click` DOM handler:
+Notice the `onClick` DOM handler:
 
-```Clojure
-   #(dispatch [:yes-button-clicked])
+```javascript
+   reframe.dispatch(['yes-button-clicked']);
 ```
 
 With re-framejs, we try to keep the DOM as passive as possible. We do not
@@ -799,10 +799,10 @@ dispatched (which is pure simple, lovely data, flowing).
 Let's update our diagram to show `dispatch`:
 
 ```
-app-db  -->  components  -->  Hiccup  -->  Reagent  -->  VDOM  -->  React  -->  DOM
+app-db  --------->  components  --------->  VDOM  -------->  React  -------->  DOM
  ^                                                                              |
  |                                                                              v
- handlers <----------------------------------------  (dispatch [event-id  event params])
+ handlers <----------------------------------------  (dispatch [event-id,  event params])
 ```
 
 **Rule**:  `components` are as passive and minimal as possible when it comes to handling events.
@@ -814,24 +814,24 @@ Collectively, event handlers provide the control logic in a re-framejs applicati
 
 An event handler is a pure function of two parameters:
 
- 1. current value in `app-db`.  Note: that's the map **in** `app-db`, not the atom itself.
+ 1. current value in `db$`.  Note: that's the map **in** `db$`, not the stream itself.
  2. an event (represented as a vector)
 
-It returns the new value which should be reset! into `app-db`.
+It returns the new value which should be reset into `db$`.
 
 An example handler:
-```Clojure
-(defn handle-delete
-   [app-state [_ item-id]]          ;; notice how event vector is destructured -- 2nd parameter
-   (dissoc-in app-state [:some :path item-id]))     ;; return a modified version of 'app-state'
+```javascript
+function handleDelete(db, [_ itemId]) {           // notice how event vector is destructured -- 2nd parameter
+   return db.removeIn(['some', 'path', itemId]);  // return a modified version of 'db'
+}
 ```
 
-Handling an event invariably involves mutating the value in `app-db`
+Handling an event invariably involves mutating the value in `db$`
 (which is provided as the first parameter).
 An item is added here, or one is deleted there.  So, often simple CRUD, but sometimes much more,
 and sometimes with async results.
 
-But the `app-db` mutation is ultimately handled by re-framejs (it does the `reset!`). That leaves your event
+But the `db$` mutation is ultimately handled by re-framejs (it does the `reset`). That leaves your event
 handlers pure. As a result, they tend to be easy to test and understand.  Many are almost trivial.
 
 There's more to event handlers than can be covered here in this introductory tutorial. Read up on
@@ -846,7 +846,7 @@ event to be processed by the right handler.
 
 
 ```
-app-db  -->  components  -->  Hiccup  -->  Reagent  -->  VDOM  -->  React  -->  DOM
+app-db  -------->  components  -------->  VDOM  --------->  React  --------->  DOM
  ^                                                                              |
  |                                                                              v
  handlers <-----  router  <-----------------------  (dispatch [event-id  event params])
@@ -856,28 +856,29 @@ The `router` will:
 
 1. inspect the 1st element of the arriving vector
 2. look in its registry for the handler which is registered for this kind of event
-3. call that handler with two parameters: (1) the current value in `app-db` and (2) the event vector
-4. reset! the returned value back into `app-db`.
+3. call that handler with two parameters: (1) the current value in `db$` and (2) the event vector
+4. reset the returned value back into `db$`.
 
 As a re-framejs app developer, your job is to write handlers for each kind of event, and
 then to register those handlers with the router.
 
 Here's how we would register our event handler:
 
-```Clojure
-(register-handler
-  :delete-item         ;; the event id (name)
-  handle-delete)       ;; the handler function for that event
+```javascript
+reframe.registerHandler(
+   'deleteItem', // the event id (name)
+   handleDelete  // the handler function for that event
+);
 ```
 
-Any arriving event vector which has `:delete-item` as the first element will now be routed to our handler.
+Any arriving event vector which has `deleteItem` as the first element will now be routed to our handler.
 
 ### Control Via FSM
 
 Above, I commented that event handlers collectively represent the "control layer" of the
 application.  They contain
 logic which interprets arriving events and they "step" the application "forward"
-via mutations to `app-db`.
+via mutations to `db$`.
 
 Our `delete-handler` above is trivial, but as an application grows more features, the logic in many
 handlers will become more complicated, and they will have to query BOTH the current state of the app
@@ -891,7 +892,7 @@ lectures?
 
 That's right - as an app becomes more complex, the handlers are likely to be  collectively implementing a
 [Finite State Machine](http://en.wikipedia.org/wiki/Finite-state_machine):
-  - your app is in a certain logical state (defined by the current values in `app-db`)
+  - your app is in a certain logical state (defined by the current values in `db$`)
   - the arriving event vector represents a `trigger`.
   - the event handler implements "a transition", subject to BOTH the current logical state and the arriving trigger.
   - after the handler has run, the transition may have moved the app into a new logical state.
@@ -930,12 +931,12 @@ Then notice that event handlers take two parameters too:
 
 Which is the same as a `combining function` in a `reduce`!!
 
-So now we can introduce the new mental model:  at any point in time, the value in `app-db` is the result of
+So now we can introduce the new mental model:  at any point in time, the value in `db$` is the result of
 performing a `reduce` over
 the entire `collection` of events dispatched in the app up until that time. The combining function
 for this reduce is the set of handlers.
 
-It is almost like `app-db` is the temporary place where this imagined `perpetual reduce` stores
+It is almost like `db$` is the temporary place where this imagined `perpetual reduce` stores
 its on-going reduction.
 
 ### Derived Data, Everywhere, flowing
@@ -944,7 +945,7 @@ Have you watched that
 [StrangeLoop presentation ](https://www.youtube.com/watch?v=fU9hR3kiOK0) yet?
 I hope so. Database as a stream, right?
 
-If you have then, given the explanation above, you might twig to the idea that `app-db` is
+If you have then, given the explanation above, you might twig to the idea that `db$` is
 really a derived value (of the `perpetual reduce`).
 
 And yet, it acts as the authoritative source of state in the app. And yet, it isn't, it is simply
@@ -975,14 +976,14 @@ To debug it, you need to know this information:
  2. What final event then caused your app to fall in a screaming mess.
 
 Well, with re-framejs you need to record (have available):
- 1. A recent checkpoint of the app state in `app-db` (perhaps the initial state)
+ 1. A recent checkpoint of the app state in `db$` (perhaps the initial state)
  2. all the events `dispatch`ed since the last checkpoint, up to the point where the exception occurred.
 
 Note: that's all just data. **Pure, lovely loggable data.**
 
 If you have that data, then you can reproduce the exception.
 
-re-framejs allows you to time travel. Install the "checkpoint" state into `app-db`
+re-framejs allows you to time travel. Install the "checkpoint" state into `db$`
 and then "play forward" through the collection dispatched events.
 
 The only way the app "moves forwards" is via events. "Replaying events" moves you
@@ -995,19 +996,19 @@ a checkpoint, and the events since then.
 
 Some events handlers will need to initiate an async server connection (e.g. GET or POST something).
 
-The initiating event handlers should organise that the `on-success` or `on-fail` handlers for
+The initiating event handlers should organise that the `onSuccess` or `onFail` handlers for
 these HTTP requests themselves simply dispatch a new event.  They should never attempt to
-modify `app-db` themselves.  That is always done in a handler.
+modify `db$` themselves.  That is always done in a handler.
 
 **Notes**:
  - all events are handled via a call to `dispatch`. GUI events, async HTTP events, everything.
  - `dispatch` will cause a handler function to be called. But the process is async. The call is queued.
  - if you (further) dispatch in a handler, then that will be async too. The associated handler is
    queued for later processing.  Why?  Partially because handlers are given a snapshot of
-   the `app-db` and can't be nested.
+   the `db$` and can't be nested.
  - if you kick off an HTTP request in a handler, then organise for the on-success or on-fail handlers
-   to dispatch their outcome.  All events are handled via dispatch. on-success should never ever change
-   `app-db`.
+   to dispatch their outcome.  All events are handled via dispatch. onSuccess should never ever change
+   `db$`.
 
 The [wiki](https://github.com/Day8/re-framejs/wiki/Talking-To-Servers) has more on the subject.
 
@@ -1049,6 +1050,9 @@ To build an app using re-framejs, you'll have to:
 
 
 ### Where Do I Go Next?
+
+*NOTE: This is the javascript clone of clojurescript re-frame, you can use examples from there until we will adapt them
+to javasript*
 
 Your next steps with re-framejs should be:
   - look at the examples:  https://github.com/Day8/re-framejs/tree/master/examples

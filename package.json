@@ -1,6 +1,6 @@
 {
   "name": "re-framejs",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "",
   "main": "dist/re-frame.js",
   "dependencies": {

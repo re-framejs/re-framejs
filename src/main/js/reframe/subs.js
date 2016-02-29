@@ -1,4 +1,4 @@
-import * as Rx from 'rx ';
+import * as Rx from 'rx';
 import {Dispatcher} from 'reframe/dispatcher.js';
 import {Index} from 'reframe/subindex.js';
 

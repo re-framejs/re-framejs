@@ -1070,7 +1070,7 @@ Here are some open source re-framejs apps you can look at for more inspiration:
 
 ### Licence
 
-Copyright © 2015 Michael Thompson
+Copyright © 2015 Michael Thompson, Tomas Drencak
 
 Distributed under The MIT License (MIT) - See LICENSE.txt
 

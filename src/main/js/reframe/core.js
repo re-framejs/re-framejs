@@ -21,3 +21,5 @@ module.exports.deref = react.deref;
 module.exports.atom = atom.atom;
 module.exports.swap = atom.swap;
 module.exports.reset = atom.reset;
+module.exports.pause$ = react.pause$;
+module.exports.compMiddleware = commands.compMiddleware;

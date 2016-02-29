@@ -5,6 +5,8 @@ import * as React from 'react';
 import * as Rx from 'rx';
 import {shouldUpdate} from 'reframe/shouldupdate';
 
+export const pause$ = new Rx.BehaviorSubject(true);
+
 export function deref(rx, transform) {
     let ttransform = transform || (a=>a);
     let subj = new Rx.BehaviorSubject();
@@ -41,8 +43,9 @@ export function render() {
     data.toUpdate.forEach(([_, forceUpdate]) => forceUpdate());
     data.toUpdate = [];
 }
-subs.render$.subscribe(render);
-window.render = render;
+subs.render$
+    .pausable(pause$)
+    .subscribe(render);
 
 export let StatelessMixin = {
     shouldComponentUpdate: function (nextProps, nextState) {

@@ -4,9 +4,6 @@ export class Dispatcher {
     }
 
     register(name, handler) {
-        if (this.map[name]) {
-            throw new Error(name + 'handler is already registered');
-        }
         this.map[name] = handler;
     }
 

@@ -15,9 +15,24 @@ module.exports = {
         umdNamedDefine: true
     },
     externals: {
-        immutable: 'Immutable',
-        react: 'React',
-        rx: 'Rx'
+        immutable: {
+          amd: "immutable",
+          commonjs: "immutable",
+          commonjs2: "immutable",
+          root: "Immutable"
+        },
+        react: {
+          amd: "react",
+          commonjs: "react",
+          commonjs2: "react",
+          root: "React"
+        },
+        rx: {
+          amd: "rx",
+          commonjs: "rx",
+          commonjs2: "rx",
+          root: "Rx"
+        }
     },
     resolve: {
         root: [

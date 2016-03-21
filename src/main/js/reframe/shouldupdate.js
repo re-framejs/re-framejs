@@ -1,4 +1,5 @@
 'use strict';
+import * as Immutable from 'immutable';
 
 /**
  * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,

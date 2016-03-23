@@ -1,10 +1,11 @@
 {
   "name": "re-framejs",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Reagent re-frame implementation using RxJs",
   "main": "dist/reframe.js",
   "files": [
     "dist/reframe.js",
+    "dist/reframe.js.map",
     "LICENSE",
     "README.md"
   ],

@@ -3,6 +3,7 @@
 import * as subs from 'reframe/subs.js';
 import * as React from 'react';
 import * as Rx from 'rx';
+import * as Immutable from 'immutable';
 import {shouldUpdate} from 'reframe/shouldupdate';
 
 export const pause$ = new Rx.BehaviorSubject(true);

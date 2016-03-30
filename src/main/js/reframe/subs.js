@@ -44,6 +44,9 @@ export function registerSub(name, handler) {
 
 export function subscribe(cmd) {
     const handler = subDispatcher.lookup(cmd[0]);
+    if (!handler) {
+        throw new Error('Subscription handler for "' + cmd[0] + '" not found');
+    }
     return handler(requestRender$, cmd);
 }
 

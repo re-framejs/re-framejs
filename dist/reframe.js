@@ -1,2 +1,1294 @@
-!function(e,t){"object"==typeof exports&&"object"==typeof module?module.exports=t(require("immutable"),require("rx"),require("react")):"function"==typeof define&&define.amd?define("reframe",["immutable","rx","react"],t):"object"==typeof exports?exports.reframe=t(require("immutable"),require("rx"),require("react")):e.reframe=t(e.Immutable,e.Rx,e.React)}(this,function(e,t,r){return function(e){function t(n){if(r[n])return r[n].exports;var o=r[n]={exports:{},id:n,loaded:!1};return e[n].call(o.exports,o,o.exports,t),o.loaded=!0,o.exports}var r={};return t.m=e,t.c=r,t.p="/js/",t(0)}([function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}var o=r(7),i=n(o),u=r(3),a=n(u),s=r(4),c=n(s),f=r(6),l=n(f),p=r(9),d=n(p),v=r(8),h=n(v);e.exports.registerHandler=i.registerHandler,e.exports.dispatch=i.dispatch,e.exports.dispatchSync=i.dispatchSync,e.exports.registerSub=a.registerSub,e.exports.subscribe=a.subscribe,e.exports.indexPath=a.indexPath,e.exports.db$=c.db$,e.exports.viewP=d.viewP,e.exports.viewV=d.viewV,e.exports.viewSP=d.viewSP,e.exports.viewSV=d.viewSV,e.exports.view=d.viewSV,e.exports.deref=d.deref,e.exports.atom=l.atom,e.exports.swap=l.swap,e.exports.reset=l.reset,e.exports.render=d.render,e.exports.pause$=d.pause$,e.exports.compMiddleware=i.compMiddleware,e.exports.debug=h.debug,e.exports.trimv=h.trimv,e.exports.path=h.path,e.exports.enrich=h.enrich,e.exports.after=h.after},function(t,r){t.exports=e},function(e,r){e.exports=t},function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}function o(e,t){g.register(e,t)}function i(e){var t=g.lookup(e[0]);return t(h,e)}function u(e,t){return m.sub(e,t)}Object.defineProperty(t,"__esModule",{value:!0}),t.render$=t.sync$=t.animationFrame$=void 0;var a=function(){function e(e,t){var r=[],n=!0,o=!1,i=void 0;try{for(var u,a=e[Symbol.iterator]();!(n=(u=a.next()).done)&&(r.push(u.value),!t||r.length!==t);n=!0);}catch(s){o=!0,i=s}finally{try{!n&&a["return"]&&a["return"]()}finally{if(o)throw i}}return r}return function(t,r){if(Array.isArray(t))return t;if(Symbol.iterator in Object(t))return e(t,r);throw new TypeError("Invalid attempt to destructure non-iterable instance")}}();t.registerSub=o,t.subscribe=i,t.indexPath=u;var s=r(2),c=n(s),f=r(5),l=r(11),p=t.animationFrame$=new c.BehaviorSubject,d=new c.Subject,v=t.sync$=new c.Subject,h=new c.BehaviorSubject,b=t.render$=new c.Subject,y=!1;p.filter(Boolean).doOnNext(function(e){y||(requestAnimationFrame(function(){d.onNext(p.getValue()),y=!1}),y=!0)}).subscribe(),c.Observable.merge(d,v).scan(function(e,t){var r=a(e,2),n=r[0],o=r[1],i=a(t,2),u=i[0],s=i[1];return u>n?[u,s]:[n,o]},[-1,null]).map(function(e){var t=a(e,2),r=(t[0],t[1]);return r}).distinctUntilChanged(function(e){return e},function(e,t){return e===t}).doOnNext(function(e){h.onNext(e),b.onNext(!0)}).subscribe();var g=new f.Dispatcher,m=new l.Index(function(){return h})},function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}Object.defineProperty(t,"__esModule",{value:!0}),t.db$=void 0;var o=r(2),i=n(o),u=r(1),a=n(u);t.db$=new i.BehaviorSubject(a.Map())},function(e,t){"use strict";function r(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}Object.defineProperty(t,"__esModule",{value:!0});var n=function(){function e(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,n.key,n)}}return function(t,r,n){return r&&e(t.prototype,r),n&&e(t,n),t}}();t.Dispatcher=function(){function e(){r(this,e),this.map={}}return n(e,[{key:"register",value:function(e,t){this.map[e]=t}},{key:"lookup",value:function(e){return this.map[e]}}]),e}()},function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}function o(e){return new s.BehaviorSubject(e)}function i(e,t){e.onNext(t(e.getValue()))}function u(e,t){e.onNext(t)}Object.defineProperty(t,"__esModule",{value:!0}),t.atom=o,t.swap=i,t.reset=u;var a=r(2),s=n(a)},function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}function o(e){return function(t){var r=e.reverse().filter(function(e){return e}).reduce(function(e,t){return t(e)},t);return r}}function i(){var e=void 0,t=void 0,r=void 0;switch(arguments.length){case 2:e=arguments[0],t=function(e){return e},r=arguments[1];break;case 3:e=arguments[0],t=Array.isArray(arguments[1])?o(arguments[1]):arguments[1],r=arguments[2];break;default:throw new Error("Expected 2 or 3 arguments, got "+arguments.length)}b.register(e,t(r))}function u(e){y.onNext([!1,e])}function a(e){y.onNext([!0,e])}Object.defineProperty(t,"__esModule",{value:!0});var s=function(){function e(e,t){var r=[],n=!0,o=!1,i=void 0;try{for(var u,a=e[Symbol.iterator]();!(n=(u=a.next()).done)&&(r.push(u.value),!t||r.length!==t);n=!0);}catch(s){o=!0,i=s}finally{try{!n&&a["return"]&&a["return"]()}finally{if(o)throw i}}return r}return function(t,r){if(Array.isArray(t))return t;if(Symbol.iterator in Object(t))return e(t,r);throw new TypeError("Invalid attempt to destructure non-iterable instance")}}();t.compMiddleware=o,t.registerHandler=i,t.dispatch=u,t.dispatchSync=a;var c=r(4),f=r(2),l=n(f),p=r(3),d=r(5),v=r(1),h=n(v),b=new d.Dispatcher,y=new l.Subject;y.scan(function(e,t){var r=s(e,2),n=r[0],o=r[1],i=s(t,2),u=i[0],a=i[1],f=b.lookup(a[0]),l=f(o,a);if(l!==o){c.db$.onNext(l);var d=n+1;return u?p.sync$.onNext([d,l]):p.animationFrame$.onNext([d,l]),[d,l]}return[n,o]},[0,h.Map()]).subscribe()},function(e,t,r){"use strict";function n(e){return function(t,r){console.log("-- New Event ----------------------------------------------------"),console.groupCollapsed("re-frame event: ",r.map(function(e){return e&&e.toJS?e.toJS():e}));var n=e(t,r),o=s(t,n);return o.forEach(function(e){return console.log(e.toJS())}),console.groupEnd(),n}}function o(e){return function(t,r){return e(t,r.slice(1))}}function i(e,t){return function(r){return function(n,o){var i=r(n.getIn(e,t),o);return n.setIn(e,i)}}}function u(e){return function(t){return function(r,n){var o=t(r,n);return e(o,n,r)}}}function a(e){return function(t){return function(r,n){var o=t(r,n);return e(o,n,r),o}}}Object.defineProperty(t,"__esModule",{value:!0}),t.debug=n,t.trimv=o,t.path=i,t.enrich=u,t.after=a;var s=r(12)},function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}function o(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}function i(e,t){var r=t||function(e){return e},n=new M.BehaviorSubject;return e.map(r).subscribe(n).dispose(),n.getValue()}function u(e){return e.map(function(e){return e.shouldUpdate()}).reduce(function(e,t){return e||t},!1)}function a(e){V.toUpdate.push([e.state.renderOrder,function(){u(e.state.derefed)&&e.forceUpdate()}])}function s(){V.toUpdate.sort(function(e,t){var r=m(e,1),n=r[0],o=m(t,1),i=o[0];return n-i}),V.toUpdate.forEach(function(e){var t=m(e,2),r=(t[0],t[1]);return r()}),V.toUpdate=[]}function c(){return(65536*(1+Math.random())|0).toString(16).substring(1)}function f(){return c()+c()+"-"+c()+"-"+c()+"-"+c()+"-"+c()+c()+c()}function l(e,t){var r=void 0;switch(t.length){case 2:"undefined"==typeof t[1].prototype?(t[1].mixins=e,r=t[1]):r={mixins:e,render:t[1]};break;case 3:"undefined"==typeof t[2].prototype?(t[2].mixins=e.concat(t[1]),r=t[2]):r={mixins:e.concat(t[1]),render:t[2]};break;default:throw new Error("Expected 2 or 3 arguments, got "+t.length)}return r.displayName=t[0],r}function p(e,t){var r=l(e,t),n=r.render;r.render=function(){return n.call(this,this.props)};var o=j.createClass(r);return j.createFactory(o)}function d(e,t){var r=l(e,t),n=r.render;r.render=function(){return n.apply(this,this.props.argv)};var o=j.createClass(r),i=j.createFactory(o);return function(){return i({argv:Array.prototype.slice.call(arguments)})}}function v(){return p([C],arguments)}function h(){return d([C],arguments)}function b(){return p([k],arguments)}function y(){return d([k],arguments)}Object.defineProperty(t,"__esModule",{value:!0}),t.SubscriptionMixin=t.StatelessMixin=t.pause$=void 0;var g=function(){function e(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,n.key,n)}}return function(t,r,n){return r&&e(t.prototype,r),n&&e(t,n),t}}(),m=function(){function e(e,t){var r=[],n=!0,o=!1,i=void 0;try{for(var u,a=e[Symbol.iterator]();!(n=(u=a.next()).done)&&(r.push(u.value),!t||r.length!==t);n=!0);}catch(s){o=!0,i=s}finally{try{!n&&a["return"]&&a["return"]()}finally{if(o)throw i}}return r}return function(t,r){if(Array.isArray(t))return t;if(Symbol.iterator in Object(t))return e(t,r);throw new TypeError("Invalid attempt to destructure non-iterable instance")}}();t.deref=i,t.render=s,t.viewP=v,t.viewV=h,t.viewSP=b,t.viewSV=y;var w=r(3),x=n(w),S=r(16),j=n(S),O=r(2),M=n(O),_=r(1),P=n(_),E=r(10),U=t.pause$=new M.BehaviorSubject(!0),V={renderOrder:0,toUpdate:[]};x.render$.pausable(U).subscribe(s);var C=t.StatelessMixin={shouldComponentUpdate:function(e,t){return(0,E.shouldUpdate)(this.props,e,["argv"])||(0,E.shouldUpdate)(this.state,t)||(0,E.shouldUpdate)(this.props.argv,e.argv)},getDisplayName:function(){return this.constructor.displayName}},I=function(){function e(t,r,n,i){o(this,e);var u=n||function(e){return e},s=new M.ReplaySubject(1),c=new M.BehaviorSubject,f=new M.CompositeDisposable(r.distinctUntilChanged(function(e){return e},function(e,t){return e===t}).map(u).subscribe(s),s.subscribe(c),s.skip(1).subscribe(function(){a(t)}));this.disposable=f,this.subject=c,this.renderCycle=null}return g(e,[{key:"getValue",value:function(e){return this.renderCycle=e,this.lastValue=this.subject.getValue(),this.lastValue}},{key:"dispose",value:function(){this.disposable.dispose()}},{key:"shouldDispose",value:function(e){return e>this.renderCycle}},{key:"shouldUpdate",value:function(){return this.lastValue!==this.subject.getValue()}}]),e}(),k=t.SubscriptionMixin={derefSub:function(e,t){return this.deref(x.subscribe(e),t,P.List(e))},getDisplayName:function(){return this.constructor.displayName},getInitialState:function(){return{derefed:P.Map(),renderOrder:V.renderOrder++,renderCycle:0}},shouldComponentUpdate:function(e,t){var r=(0,E.shouldUpdate)(this.props,e,["argv"])||(0,E.shouldUpdate)(this.props.argv,e.argv),n=(0,E.shouldUpdate)(this.state,t,["derefed","renderOrder","renderCycle"]);return r||n},deref:function(e,t,r){var n=r||f();if(this.state.derefed.get(n))return this.state.derefed.get(n).getValue(this.state.renderCycle);var o=new I(this,e,t);return this.state.derefed=this.state.derefed.set(n,o),o.getValue(this.state.renderCycle)},unsubscribe:function(){this.state.derefed.forEach(function(e){e.dispose()}),this.state.derefed=P.Map()},componentWillUpdate:function(){this.state.renderCycle++},componentDidUpdate:function(){var e=this;this.state.derefed.filter(function(t){return t.shouldDispose(e.state.renderCycle)}).forEach(function(e){return e.dispose()}),this.state.derefed=this.state.derefed.filter(function(t){return!t.shouldDispose(e.state.renderCycle)})},componentWillUnmount:function(){this.unsubscribe()}}},function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}function o(e,t,r){var n=void 0;return t===e||t.length!==e.length?!1:(n=r&&r.length>0?Object.keys(e).filter(function(e){return-1===r.indexOf(e)}).map(function(r){return[e[r],t[r]]}):Object.keys(e).map(function(r){return[e[r],t[r]]}),n.length?!n.every(function(e){var t=s(e,2),r=t[0],n=t[1];return u(r)&&u(n)||i(r)&&i(n)?r===n:!1}):!1)}function i(e){return f.Iterable.isIterable(e)}function u(e){var t="undefined"==typeof e?"undefined":a(e);return"number"===t||"boolean"===t||"string"===t||null===e||void 0===e}Object.defineProperty(t,"__esModule",{value:!0});var a="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol?"symbol":typeof e},s=function(){function e(e,t){var r=[],n=!0,o=!1,i=void 0;try{for(var u,a=e[Symbol.iterator]();!(n=(u=a.next()).done)&&(r.push(u.value),!t||r.length!==t);n=!0);}catch(s){o=!0,i=s}finally{try{!n&&a["return"]&&a["return"]()}finally{if(o)throw i}}return r}return function(t,r){if(Array.isArray(t))return t;if(Symbol.iterator in Object(t))return e(t,r);throw new TypeError("Invalid attempt to destructure non-iterable instance")}}();t.shouldUpdate=o;var c=r(1),f=n(c)},function(e,t,r){"use strict";function n(e){if(e&&e.__esModule)return e;var t={};if(null!=e)for(var r in e)Object.prototype.hasOwnProperty.call(e,r)&&(t[r]=e[r]);return t["default"]=e,t}function o(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}Object.defineProperty(t,"__esModule",{value:!0}),t.Index=void 0;var i=function(){function e(e,t){for(var r=0;r<t.length;r++){var n=t[r];n.enumerable=n.enumerable||!1,n.configurable=!0,"value"in n&&(n.writable=!0),Object.defineProperty(e,n.key,n)}}return function(t,r,n){return r&&e(t.prototype,r),n&&e(t,n),t}}(),u=r(1),a=n(u),s=r(2),c=n(s),f={};t.Index=function(){function e(t){o(this,e),this.listeners=a.Map(),this.rx=t}return i(e,[{key:"sub",value:function(e,t){for(var r=this,n=this,o=[],i=0;i<e.length;i++)o.push(Array.prototype.slice.call(e.slice(0,i+1)));return this.listeners=o.reduce(function(e,t){var o=t.slice(0,t.length-1),i=0===o.length?r.rx():e.getIn(o.concat(f)),u=t[t.length-1];return e.updateIn(t.concat(f),function(e){if(e)return e;var r=new c.ReplaySubject(1),o=i.map(function(e){return e&&e.get?e.get(u):void 0}).distinctUntilChanged(function(e){return e},function(e,t){return e===t}).subscribe(r),a=r.subscribe;return r.subscribe=function(){var e=a.apply(this,arguments);return c.Disposable.create(function(){e.dispose(),r.hasObservers()||(o.dispose(),n.listeners=n.listeners.removeIn(t))})},r})},this.listeners),this.listeners.getIn(e.concat([f])).map(function(e){return"undefined"!=typeof e?e:t})}}]),e}()},function(e,t,r){"use strict";var n=r(1),o=r(15),i=r(13),u=r(14),a=u.concat,s=u.escape,c=o.op,f=o.isMap,l=o.isIndexed,p=function(e,t,r){var o=[],i=r||"";if(n.is(e,t)||e==t==null)return o;var u=l(e)&&l(t),v=null,h=null;return e.forEach&&e.forEach(function(e,r){if(t.has(r))if(f(e)&&f(t.get(r)))o=o.concat(p(e,t.get(r),a(i,s(r))));else if(l(t.get(r))&&l(e))o=o.concat(d(e,t.get(r),a(i,s(r))));else{var n=t.get?t.get(r):t,b=e!==n;b&&o.push(c("replace",a(i,s(r)),n))}else u?(h=null!=v&&v+1===r?h:r,o.push(c("remove",a(i,s(h)))),v=r):o.push(c("remove",a(i,s(r))))}),t.forEach(function(t,r){e.has&&!e.has(r)&&o.push(c("add",a(i,s(r)),t))}),o},d=function(e,t,r){var o=[],u=r||"";if(n.is(e,t)||e==t==null)return o;if(t.count()>100)return p(e,t,r);var s=i.diff(e,t),l=0;return s.forEach(function(e){if("="===e.op)l++;else if("!="===e.op){if(f(e.val)&&f(e.newVal)){var t=p(e.val,e.newVal,a(u,l));o=o.concat(t)}else o.push(c("replace",a(u,l),e.newVal));l++}else"+"===e.op?(o.push(c("add",a(u,l),e.val)),l++):"-"===e.op&&o.push(c("remove",a(u,l)))}),o},v=function(e,t,r){var n=r||"";return e===t?[]:[c("replace",a(n,""),t)]},h=function(e,t,r){return e==t||null!=e&&null!=t?l(e)&&l(t)?n.fromJS(d(e,t)):f(e)&&f(t)?n.fromJS(p(e,t)):n.fromJS(v(e,t,r)):n.fromJS([c("replace","/",t)])};e.exports=h},function(e,t,r){"use strict";function n(e,t){for(var r=e.size||0,n=t.size||0,u=i(r+1,n+1,0),a=0;r>a;a++)for(var s=0;n>s;s++)o.is(e.get(a),t.get(s))?u[a+1][s+1]=u[a][s]+1:u[a+1][s+1]=Math.max(u[a+1][s],u[a][s+1]);return u}var o=r(1),i=function(e,t,r){for(var n=[],o=0;e>o;o++)if(n[o]=new Array(t),null!=r)for(var i=0;t>i;i++)n[o][i]=r;return n},u=function(e,t){var r=n(e,t);return l(e,t,r)},a=o.Record({op:"=",val:null}),s=o.Record({op:"!=",val:null,newVal:null}),c=function(e,t){var r=n(e,t);return f(r,e,t,e.size||0,t.size||0)},f=function(e,t,r,n,i){return 0===n&&0===i?[]:n>0&&i>0&&o.is(t.get(n-1),r.get(i-1))?f(e,t,r,n-1,i-1).concat(new a({op:"=",val:t.get(n-1)})):n>0&&i>0&&n===i&&!o.is(t.get(n-1),r.get(i-1))?f(e,t,r,n-1,i-1).concat(new s({val:t.get(n-1),newVal:r.get(n-1)})):i>0&&(0===n||e[n][i-1]>=e[n-1][i])?f(e,t,r,n,i-1).concat(new a({op:"+",val:r.get(i-1)})):n>0&&(0===i||e[n][i-1]<e[n-1][i])?f(e,t,r,n-1,i).concat(new a({op:"-",val:t.get(n-1)})):void 0},l=function(e,t,r){for(var n=[],i=e.size,u=t.size;0!==i&&0!==u;)r[i][u]===r[i-1][u]?i--:r[i][u]===r[i][u-1]?u--:o.is(e.get(i-1),t.get(u-1))&&(n.push(e.get(i-1)),i--,u--);return n.reverse()};e.exports={lcs:u,computeLcsMatrix:n,diff:c}},function(e,t){"use strict";var r=new RegExp("/","g"),n=new RegExp("~1","g"),o=/~/g,i=/~0/g,u={escape:function(e){if("number"==typeof e)return e.toString();if("string"!=typeof e)throw"param str ("+e+") is not a string";return e.replace(o,"~0").replace(r,"~1")},unescape:function(e){return"string"==typeof e?e.replace(n,"/").replace(i,"~"):e},concat:function(e,t){return e+"/"+t}};e.exports=u},function(e,t,r){"use strict";var n=r(1),o=function(e){return n.Iterable.isKeyed(e)},i=function(e){return n.Iterable.isIndexed(e)},u=function(e,t,r){return"remove"===e?{op:e,path:t}:{op:e,path:t,value:r}};e.exports={isMap:o,isIndexed:i,op:u}},function(e,t){e.exports=r}])});
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory(require("rx"), require("immutable"), require("react"));
+	else if(typeof define === 'function' && define.amd)
+		define("reframe", ["rx", "immutable", "react"], factory);
+	else if(typeof exports === 'object')
+		exports["reframe"] = factory(require("rx"), require("immutable"), require("react"));
+	else
+		root["reframe"] = factory(root["Rx"], root["Immutable"], root["React"]);
+})(this, function(__WEBPACK_EXTERNAL_MODULE_3__, __WEBPACK_EXTERNAL_MODULE_4__, __WEBPACK_EXTERNAL_MODULE_10__) {
+return /******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+/******/
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId])
+/******/ 			return installedModules[moduleId].exports;
+/******/
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			exports: {},
+/******/ 			id: moduleId,
+/******/ 			loaded: false
+/******/ 		};
+/******/
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+/******/
+/******/ 		// Flag the module as loaded
+/******/ 		module.loaded = true;
+/******/
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/
+/******/
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+/******/
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+/******/
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "/js/";
+/******/
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(0);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var _commands = __webpack_require__(1);
+	
+	var commands = _interopRequireWildcard(_commands);
+	
+	var _subs = __webpack_require__(5);
+	
+	var subs = _interopRequireWildcard(_subs);
+	
+	var _db = __webpack_require__(2);
+	
+	var db = _interopRequireWildcard(_db);
+	
+	var _atom = __webpack_require__(8);
+	
+	var atom = _interopRequireWildcard(_atom);
+	
+	var _react = __webpack_require__(9);
+	
+	var react = _interopRequireWildcard(_react);
+	
+	var _middleware = __webpack_require__(12);
+	
+	var middleware = _interopRequireWildcard(_middleware);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	module.exports.registerHandler = commands.registerHandler;
+	module.exports.dispatch = commands.dispatch;
+	module.exports.dispatchSync = commands.dispatchSync;
+	module.exports.registerSub = subs.registerSub;
+	module.exports.subscribe = subs.subscribe;
+	module.exports.indexPath = subs.indexPath;
+	module.exports.db$ = db.db$;
+	module.exports.viewP = react.viewP;
+	module.exports.viewV = react.viewV;
+	module.exports.viewSP = react.viewSP;
+	module.exports.viewSV = react.viewSV;
+	module.exports.view = react.viewSV;
+	module.exports.deref = react.deref;
+	module.exports.atom = atom.atom;
+	module.exports.swap = atom.swap;
+	module.exports.reset = atom.reset;
+	module.exports.render = react.render;
+	module.exports.pause$ = react.pause$;
+	module.exports.compMiddleware = commands.compMiddleware;
+	
+	/*********************
+	 * Middleware
+	 *********************/
+	module.exports.debug = middleware.debug;
+	module.exports.trimv = middleware.trimv;
+	module.exports.path = middleware.path;
+	module.exports.enrich = middleware.enrich;
+	module.exports.after = middleware.after;
+
+/***/ },
+/* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
+	exports.compMiddleware = compMiddleware;
+	exports.registerHandler = registerHandler;
+	exports.dispatch = dispatch;
+	exports.dispatchSync = dispatchSync;
+	
+	var _db = __webpack_require__(2);
+	
+	var _rx = __webpack_require__(3);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	var _subs = __webpack_require__(5);
+	
+	var _dispatcher = __webpack_require__(6);
+	
+	var _immutable = __webpack_require__(4);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	var commandDispatcher = new _dispatcher.Dispatcher();
+	var cmd$ = new Rx.Subject();
+	
+	function compMiddleware(middlewares) {
+	    return function (handler) {
+	        var compHandler = middlewares.reverse().filter(function (a) {
+	            return a;
+	        }).reduce(function (acc, middleware) {
+	            return middleware(acc);
+	        }, handler);
+	
+	        return compHandler;
+	    };
+	}
+	
+	function registerHandler() {
+	    var eventId = undefined,
+	        middleware = undefined,
+	        handlerFn = undefined;
+	
+	    switch (arguments.length) {
+	        case 2:
+	            eventId = arguments[0];
+	            middleware = function middleware(handler) {
+	                return handler;
+	            };
+	            handlerFn = arguments[1];
+	            break;
+	        case 3:
+	            eventId = arguments[0];
+	            middleware = Array.isArray(arguments[1]) ? compMiddleware(arguments[1]) : arguments[1];
+	            handlerFn = arguments[2];
+	            break;
+	        default:
+	            throw new Error('Expected 2 or 3 arguments, got ' + arguments.length);
+	    }
+	
+	    commandDispatcher.register(eventId, middleware(handlerFn));
+	}
+	
+	function dispatch(cmd) {
+	    cmd$.onNext([false, cmd]);
+	}
+	
+	function dispatchSync(cmd) {
+	    cmd$.onNext([true, cmd]);
+	}
+	
+	cmd$.scan(function (_ref, _ref2) {
+	    var _ref4 = _slicedToArray(_ref, 2);
+	
+	    var version = _ref4[0];
+	    var db = _ref4[1];
+	
+	    var _ref3 = _slicedToArray(_ref2, 2);
+	
+	    var sync = _ref3[0];
+	    var cmd = _ref3[1];
+	
+	    var handler = commandDispatcher.lookup(cmd[0]);
+	
+	    if (!handler) {
+	        throw new Error('Command handler for "' + cmd[0] + '" not found');
+	    }
+	    var newDb = handler(db, cmd);
+	
+	    if (newDb !== db) {
+	        _db.db$.onNext(newDb);
+	        var nextVersion = version + 1;
+	        if (sync) {
+	            _subs.sync$.onNext([nextVersion, newDb]);
+	        } else {
+	            _subs.animationFrame$.onNext([nextVersion, newDb]);
+	        }
+	
+	        return [nextVersion, newDb];
+	    }
+	    return [version, db];
+	}, [0, Immutable.Map()]).subscribe();
+
+/***/ },
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.db$ = undefined;
+	
+	var _rx = __webpack_require__(3);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	var _immutable = __webpack_require__(4);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	var db$ = exports.db$ = new Rx.BehaviorSubject(Immutable.Map());
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	module.exports = __WEBPACK_EXTERNAL_MODULE_3__;
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	module.exports = __WEBPACK_EXTERNAL_MODULE_4__;
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.render$ = exports.sync$ = exports.animationFrame$ = undefined;
+	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
+	exports.registerSub = registerSub;
+	exports.subscribe = subscribe;
+	exports.indexPath = indexPath;
+	
+	var _rx = __webpack_require__(3);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	var _dispatcher = __webpack_require__(6);
+	
+	var _subindex = __webpack_require__(7);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	var animationFrame$ = exports.animationFrame$ = new Rx.BehaviorSubject();
+	var animationFrame$1 = new Rx.Subject();
+	var sync$ = exports.sync$ = new Rx.Subject();
+	var requestRender$ = new Rx.BehaviorSubject();
+	var render$ = exports.render$ = new Rx.Subject();
+	
+	var scheduled = false;
+	animationFrame$.filter(Boolean).doOnNext(function (v) {
+	    if (!scheduled) {
+	        requestAnimationFrame(function () {
+	            animationFrame$1.onNext(animationFrame$.getValue());
+	            scheduled = false;
+	        });
+	        scheduled = true;
+	    }
+	}).subscribe();
+	
+	Rx.Observable.merge(animationFrame$1, sync$).scan(function (_ref, _ref2) {
+	    var _ref4 = _slicedToArray(_ref, 2);
+	
+	    var oldVersion = _ref4[0];
+	    var oldDb = _ref4[1];
+	
+	    var _ref3 = _slicedToArray(_ref2, 2);
+	
+	    var newVersion = _ref3[0];
+	    var newDb = _ref3[1];
+	
+	    if (newVersion > oldVersion) {
+	        return [newVersion, newDb];
+	    }
+	    return [oldVersion, oldDb];
+	}, [-1, null]).map(function (_ref5) {
+	    var _ref6 = _slicedToArray(_ref5, 2);
+	
+	    var version = _ref6[0];
+	    var db = _ref6[1];
+	    return db;
+	}).distinctUntilChanged(function (x) {
+	    return x;
+	}, function (x, y) {
+	    return x === y;
+	}).doOnNext(function (db) {
+	    requestRender$.onNext(db);
+	    render$.onNext(true);
+	}).subscribe();
+	
+	var subDispatcher = new _dispatcher.Dispatcher();
+	function registerSub(name, handler) {
+	    subDispatcher.register(name, handler);
+	}
+	
+	function subscribe(cmd) {
+	    var handler = subDispatcher.lookup(cmd[0]);
+	    if (!handler) {
+	        throw new Error('Subscription handler for "' + cmd[0] + '" not found');
+	    }
+	    return handler(requestRender$, cmd);
+	}
+	
+	var index = new _subindex.Index(function () {
+	    return requestRender$;
+	});
+	function indexPath(path, def) {
+	    return index.sub(path, def);
+	}
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	"use strict";
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var Dispatcher = exports.Dispatcher = function () {
+	    function Dispatcher() {
+	        _classCallCheck(this, Dispatcher);
+	
+	        this.map = {};
+	    }
+	
+	    _createClass(Dispatcher, [{
+	        key: "register",
+	        value: function register(name, handler) {
+	            this.map[name] = handler;
+	        }
+	    }, {
+	        key: "lookup",
+	        value: function lookup(name) {
+	            return this.map[name];
+	        }
+	    }]);
+	
+	    return Dispatcher;
+	}();
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.Index = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _immutable = __webpack_require__(4);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	var _rx = __webpack_require__(3);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var LISTENER_SENTINEL = {};
+	
+	var Index = exports.Index = function () {
+	    function Index(rx) {
+	        _classCallCheck(this, Index);
+	
+	        this.listeners = Immutable.Map();
+	        this.rx = rx;
+	    }
+	
+	    _createClass(Index, [{
+	        key: 'sub',
+	        value: function sub(path, def) {
+	            var _this = this;
+	
+	            var self = this;
+	
+	            var slices = [];
+	            for (var i = 0; i < path.length; i++) {
+	                slices.push(Array.prototype.slice.call(path.slice(0, i + 1)));
+	            }
+	            this.listeners = slices.reduce(function (acc, pathSlice) {
+	                var parentPath = pathSlice.slice(0, pathSlice.length - 1);
+	                var parentRx = parentPath.length === 0 ? _this.rx() : acc.getIn(parentPath.concat(LISTENER_SENTINEL));
+	                var lastFragment = pathSlice[pathSlice.length - 1];
+	                return acc.updateIn(pathSlice.concat(LISTENER_SENTINEL), function (old) {
+	                    if (old) {
+	                        return old;
+	                    }
+	                    var subject = new Rx.ReplaySubject(1),
+	                        subscription = parentRx.map(function (a) {
+	                        if (a && a.get) {
+	                            return a.get(lastFragment);
+	                        }
+	                    }).distinctUntilChanged(function (x) {
+	                        return x;
+	                    }, function (x, y) {
+	                        return x === y;
+	                    })
+	                    //.doOnNext(v => console.log('v', v.toJS()))
+	                    .subscribe(subject);
+	                    var oldSubscribe = subject.subscribe;
+	                    subject.subscribe = function () {
+	                        var sub = oldSubscribe.apply(this, arguments);
+	
+	                        return Rx.Disposable.create(function () {
+	                            sub.dispose();
+	                            if (!subject.hasObservers()) {
+	                                subscription.dispose();
+	                                self.listeners = self.listeners.removeIn(pathSlice);
+	                            }
+	                        });
+	                    };
+	                    return subject;
+	                });
+	            }, this.listeners);
+	
+	            return this.listeners.getIn(path.concat([LISTENER_SENTINEL])).map(function (a) {
+	                return typeof a !== 'undefined' ? a : def;
+	            });
+	        }
+	    }]);
+	
+	    return Index;
+	}();
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.atom = atom;
+	exports.swap = swap;
+	exports.reset = reset;
+	
+	var _rx = __webpack_require__(3);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function atom(value) {
+	    return new Rx.BehaviorSubject(value);
+	}
+	
+	function swap(aAtom, update) {
+	    aAtom.onNext(update(aAtom.getValue()));
+	}
+	
+	function reset(aAtom, value) {
+	    aAtom.onNext(value);
+	}
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.SubscriptionMixin = exports.StatelessMixin = exports.pause$ = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
+	exports.deref = deref;
+	exports.render = render;
+	exports.viewP = viewP;
+	exports.viewV = viewV;
+	exports.viewSP = viewSP;
+	exports.viewSV = viewSV;
+	
+	var _subs = __webpack_require__(5);
+	
+	var subs = _interopRequireWildcard(_subs);
+	
+	var _react = __webpack_require__(10);
+	
+	var React = _interopRequireWildcard(_react);
+	
+	var _rx = __webpack_require__(3);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	var _immutable = __webpack_require__(4);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	var _shouldupdate = __webpack_require__(11);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var pause$ = exports.pause$ = new Rx.BehaviorSubject(true);
+	
+	function deref(rx, transform) {
+	    var ttransform = transform || function (a) {
+	        return a;
+	    };
+	    var subj = new Rx.BehaviorSubject();
+	    rx.map(ttransform).subscribe(subj).dispose();
+	    return subj.getValue();
+	}
+	
+	var data = {
+	    renderOrder: 0,
+	    toUpdate: []
+	};
+	
+	function shouldUpdateByDerefed(derefed) {
+	    return derefed.map(function (derefed) {
+	        return derefed.shouldUpdate();
+	    }).reduce(function (acc, v) {
+	        return acc || v;
+	    }, false);
+	}
+	
+	function needUpdate(obj) {
+	    //console.log('Need update', obj.getDisplayName());
+	    data.toUpdate.push([obj.state.renderOrder, function () {
+	        if (shouldUpdateByDerefed(obj.state.derefed)) {
+	            // console.log('Force update', obj.getDisplayName());
+	            obj.forceUpdate();
+	        }
+	    }]);
+	}
+	
+	function render() {
+	    data.toUpdate.sort(function (_ref, _ref2) {
+	        var _ref4 = _slicedToArray(_ref, 1);
+	
+	        var o1 = _ref4[0];
+	
+	        var _ref3 = _slicedToArray(_ref2, 1);
+	
+	        var o2 = _ref3[0];
+	        return o1 - o2;
+	    });
+	
+	    data.toUpdate.forEach(function (_ref5) {
+	        var _ref6 = _slicedToArray(_ref5, 2);
+	
+	        var _ = _ref6[0];
+	        var forceUpdate = _ref6[1];
+	        return forceUpdate();
+	    });
+	    data.toUpdate = [];
+	}
+	subs.render$.pausable(pause$).subscribe(render);
+	
+	var StatelessMixin = exports.StatelessMixin = {
+	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
+	        return (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv']) || (0, _shouldupdate.shouldUpdate)(this.state, nextState) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv);
+	    },
+	    getDisplayName: function getDisplayName() {
+	        return this.constructor.displayName;
+	    }
+	};
+	
+	var DerefedSubscription = function () {
+	    function DerefedSubscription(view, rx, aTransform, renderCycle) {
+	        _classCallCheck(this, DerefedSubscription);
+	
+	        var transform = aTransform || function (a) {
+	            return a;
+	        },
+	            replay = new Rx.ReplaySubject(1),
+	            subj = new Rx.BehaviorSubject();
+	        var disposable = new Rx.CompositeDisposable(rx.distinctUntilChanged(function (x) {
+	            return x;
+	        }, function (x, y) {
+	            return x === y;
+	        }).map(transform).subscribe(replay), replay.subscribe(subj), replay.skip(1).subscribe(function () {
+	            needUpdate(view);
+	        }));
+	
+	        this.disposable = disposable;
+	        this.subject = subj;
+	        this.renderCycle = null;
+	    }
+	
+	    _createClass(DerefedSubscription, [{
+	        key: 'getValue',
+	        value: function getValue(renderCycle) {
+	            this.renderCycle = renderCycle;
+	            this.lastValue = this.subject.getValue();
+	            return this.lastValue;
+	        }
+	    }, {
+	        key: 'dispose',
+	        value: function dispose() {
+	            this.disposable.dispose();
+	        }
+	    }, {
+	        key: 'shouldDispose',
+	        value: function shouldDispose(renderCycle) {
+	            return renderCycle > this.renderCycle;
+	        }
+	    }, {
+	        key: 'shouldUpdate',
+	        value: function shouldUpdate() {
+	            return this.lastValue !== this.subject.getValue();
+	        }
+	    }]);
+	
+	    return DerefedSubscription;
+	}();
+	
+	function S4() {
+	    return ((1 + Math.random()) * 0x10000 | 0).toString(16).substring(1);
+	};
+	
+	// Generate a pseudo-GUID by concatenating random hexadecimal.
+	function guid() {
+	    return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4();
+	};
+	
+	var SubscriptionMixin = exports.SubscriptionMixin = {
+	    derefSub: function derefSub(subVec, transform) {
+	        return this.deref(subs.subscribe(subVec), transform, Immutable.List(subVec));
+	    },
+	
+	    getDisplayName: function getDisplayName() {
+	        return this.constructor.displayName;
+	    },
+	    getInitialState: function getInitialState() {
+	        return {
+	            derefed: Immutable.Map(),
+	            renderOrder: data.renderOrder++,
+	            renderCycle: 0
+	        };
+	    },
+	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
+	        var updateByProps = (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv']) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv),
+	            updateByState = (0, _shouldupdate.shouldUpdate)(this.state, nextState, ['derefed', 'renderOrder', 'renderCycle']);
+	
+	        return updateByProps || updateByState;
+	    },
+	    deref: function deref(rx, aTransform, aId) {
+	        var id = aId || guid();
+	        if (this.state.derefed.get(id)) {
+	            return this.state.derefed.get(id).getValue(this.state.renderCycle);
+	        }
+	        var derefed = new DerefedSubscription(this, rx, aTransform);
+	
+	        this.state.derefed = this.state.derefed.set(id, derefed);
+	
+	        return derefed.getValue(this.state.renderCycle);
+	    },
+	    unsubscribe: function unsubscribe() {
+	        this.state.derefed.forEach(function (derefed) {
+	            derefed.dispose();
+	        });
+	
+	        this.state.derefed = Immutable.Map();
+	    },
+	    componentWillUpdate: function componentWillUpdate() {
+	        // console.log('Rendering', this.getDisplayName());
+	        this.state.renderCycle++;
+	        //this.unsubscribe();
+	    },
+	    componentDidUpdate: function componentDidUpdate() {
+	        var _this = this;
+	
+	        this.state.derefed.filter(function (derefed) {
+	            return derefed.shouldDispose(_this.state.renderCycle);
+	        }).forEach(function (item) {
+	            return item.dispose();
+	        });
+	
+	        this.state.derefed = this.state.derefed.filter(function (derefed) {
+	            return !derefed.shouldDispose(_this.state.renderCycle);
+	        });
+	    },
+	    componentWillUnmount: function componentWillUnmount() {
+	        this.unsubscribe();
+	    }
+	};
+	
+	function createComponentObj(mixins, args) {
+	    var componentObj = undefined;
+	    switch (args.length) {
+	        case 2:
+	            if (typeof args[1].prototype === 'undefined') {
+	                args[1].mixins = mixins;
+	                componentObj = args[1];
+	            } else {
+	                componentObj = {
+	                    mixins: mixins,
+	                    render: args[1]
+	                };
+	            }
+	            break;
+	        case 3:
+	            if (typeof args[2].prototype === 'undefined') {
+	                // it's an object
+	                args[2].mixins = mixins.concat(args[1]);
+	                componentObj = args[2];
+	            } else {
+	                // it's a render function
+	                componentObj = {
+	                    mixins: mixins.concat(args[1]),
+	                    render: args[2]
+	                };
+	            }
+	            break;
+	        default:
+	            throw new Error('Expected 2 or 3 arguments, got ' + args.length);
+	    }
+	    componentObj.displayName = args[0];
+	    return componentObj;
+	}
+	
+	function propsView(mixin, args) {
+	    var componentObj = createComponentObj(mixin, args);
+	    var oldRender = componentObj.render;
+	    componentObj.render = function () {
+	        return oldRender.call(this, this.props);
+	    };
+	
+	    var component = React.createClass(componentObj);
+	
+	    return React.createFactory(component);
+	}
+	
+	function vectorView(mixin, args) {
+	    var componentObj = createComponentObj(mixin, args);
+	    var oldRender = componentObj.render;
+	    componentObj.render = function () {
+	        return oldRender.apply(this, this.props.argv);
+	    };
+	    var component = React.createClass(componentObj);
+	    var factory = React.createFactory(component);
+	
+	    return function () {
+	        return factory({ argv: Array.prototype.slice.call(arguments) });
+	    };
+	}
+	
+	function viewP() {
+	    return propsView([StatelessMixin], arguments);
+	}
+	
+	function viewV() {
+	    return vectorView([StatelessMixin], arguments);
+	}
+	
+	function viewSP() {
+	    return propsView([SubscriptionMixin], arguments);
+	}
+	
+	function viewSV() {
+	    return vectorView([SubscriptionMixin], arguments);
+	}
+
+/***/ },
+/* 10 */
+/***/ function(module, exports) {
+
+	module.exports = __WEBPACK_EXTERNAL_MODULE_10__;
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
+	exports.shouldUpdate = shouldUpdate;
+	
+	var _immutable = __webpack_require__(4);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	/**
+	 * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
+	 * return false. If props contains only immutable entries compare them by type.
+	 *
+	 * @param {object} props current props
+	 * @param {object} nextProps new props
+	 * @param {array} ignore ignore these keys
+	 * @returns {boolean} true if component should be rerendered
+	 */
+	function shouldUpdate(props, nextProps, ignore) {
+	    var entries = undefined;
+	    if (nextProps === props || nextProps.length !== props.length) {
+	        return false;
+	    }
+	    if (ignore && ignore.length > 0) {
+	        entries = Object.keys(props).filter(function (k) {
+	            return ignore.indexOf(k) === -1;
+	        }).map(function (k) {
+	            return [props[k], nextProps[k]];
+	        });
+	    } else {
+	        entries = Object.keys(props).map(function (k) {
+	            return [props[k], nextProps[k]];
+	        });
+	    }
+	
+	    if (entries.length) {
+	        return !entries.every(function (_ref) {
+	            var _ref2 = _slicedToArray(_ref, 2);
+	
+	            var value = _ref2[0];
+	            var nextValue = _ref2[1];
+	
+	            if (isPrimitive(value) && isPrimitive(nextValue) || isImmutable(value) && isImmutable(nextValue)) {
+	
+	                return value === nextValue;
+	            }
+	            return false;
+	        });
+	    }
+	    return false;
+	}
+	function isImmutable(maybeImmutable) {
+	    return Immutable.Iterable.isIterable(maybeImmutable);
+	}
+	
+	function isPrimitive(value) {
+	    var type = typeof value === 'undefined' ? 'undefined' : _typeof(value);
+	    return type === 'number' || type === 'boolean' || type === 'string' || value === null || value === void 0;
+	}
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.debug = debug;
+	exports.trimv = trimv;
+	exports.path = path;
+	exports.enrich = enrich;
+	exports.after = after;
+	var immutablediff = __webpack_require__(13);
+	
+	/* eslint-disable no-console */
+	function debug(handler) {
+	    return function (db, cmd) {
+	        console.log('-- New Event ----------------------------------------------------');
+	        console.groupCollapsed('re-frame event: ', cmd.map(function (p) {
+	            return p && p.toJS ? p.toJS() : p;
+	        }));
+	        var newDb = handler(db, cmd),
+	            diff = immutablediff(db, newDb);
+	        diff.forEach(function (df) {
+	            return console.log(df.toJS());
+	        });
+	        console.groupEnd();
+	        return newDb;
+	    };
+	}
+	/* eslint-enable no-console */
+	
+	function trimv(handler) {
+	    return function (db, cmd) {
+	        return handler(db, cmd.slice(1));
+	    };
+	}
+	
+	function path(p, dflt) {
+	    return function (handler) {
+	        return function (db, cmd) {
+	            var newValue = handler(db.getIn(p, dflt), cmd);
+	            return db.setIn(p, newValue);
+	        };
+	    };
+	}
+	
+	function enrich(enrichHandler) {
+	    return function (handler) {
+	        return function (db, cmd) {
+	            var newDb = handler(db, cmd);
+	            return enrichHandler(newDb, cmd, db);
+	        };
+	    };
+	}
+	
+	function after(afterHandler) {
+	    return function (handler) {
+	        return function (db, cmd) {
+	            var newDb = handler(db, cmd);
+	            afterHandler(newDb, cmd, db);
+	            return newDb;
+	        };
+	    };
+	}
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var Immutable = __webpack_require__(4);
+	var utils = __webpack_require__(14);
+	var lcs = __webpack_require__(15);
+	var path = __webpack_require__(16);
+	var concatPath = path.concat,
+	                  escape = path.escape,
+	                  op = utils.op,
+	                  isMap = utils.isMap,
+	                  isIndexed = utils.isIndexed;
+	
+	var mapDiff = function(a, b, p){
+	  var ops = [];
+	  var path = p || '';
+	
+	  if(Immutable.is(a, b) || (a == b == null)){ return ops; }
+	
+	  var areLists = isIndexed(a) && isIndexed(b);
+	  var lastKey = null;
+	  var removeKey = null
+	
+	  if(a.forEach){
+	    a.forEach(function(aValue, aKey){
+	      if(b.has(aKey)){
+	        if(isMap(aValue) && isMap(b.get(aKey))){
+	          ops = ops.concat(mapDiff(aValue, b.get(aKey), concatPath(path, escape(aKey))));
+	        }
+	        else if(isIndexed(b.get(aKey)) && isIndexed(aValue)){
+	          ops = ops.concat(sequenceDiff(aValue, b.get(aKey), concatPath(path, escape(aKey))));
+	        }
+	        else {
+	          var bValue = b.get ? b.get(aKey) : b;
+	          var areDifferentValues = (aValue !== bValue);
+	          if (areDifferentValues) {
+	            ops.push(op('replace', concatPath(path, escape(aKey)), bValue));
+	          }
+	        }
+	      }
+	      else {
+	        if(areLists){
+	          removeKey = (lastKey != null && (lastKey+1) === aKey) ? removeKey : aKey;
+	          ops.push( op('remove', concatPath(path, escape(removeKey))) );
+	          lastKey = aKey;
+	        }
+	        else{
+	          ops.push( op('remove', concatPath(path, escape(aKey))) );
+	        }
+	        
+	      }
+	    });
+	  }
+	
+	  b.forEach(function(bValue, bKey){
+	    if(a.has && !a.has(bKey)){
+	      ops.push( op('add', concatPath(path, escape(bKey)), bValue) );
+	    }
+	  });
+	
+	  return ops;
+	};
+	
+	var sequenceDiff = function (a, b, p) {
+	  var ops = [];
+	  var path = p || '';
+	  if(Immutable.is(a, b) || (a == b == null)){ return ops; }
+	  if(b.count() > 100) { return mapDiff(a, b, p); }
+	
+	  var lcsDiff = lcs.diff(a, b);
+	
+	  var pathIndex = 0;
+	
+	  lcsDiff.forEach(function (diff) {
+	    if(diff.op === '='){ pathIndex++; }
+	    else if(diff.op === '!='){
+	      if(isMap(diff.val) && isMap(diff.newVal)){
+	        var mapDiffs = mapDiff(diff.val, diff.newVal, concatPath(path, pathIndex));
+	        ops = ops.concat(mapDiffs);
+	      }
+	      else{
+	        ops.push(op('replace', concatPath(path, pathIndex), diff.newVal));
+	      }
+	      pathIndex++;
+	    }
+	    else if(diff.op === '+'){
+	      ops.push(op('add', concatPath(path, pathIndex), diff.val));
+	      pathIndex++;
+	    }
+	    else if(diff.op === '-'){ ops.push(op('remove', concatPath(path, pathIndex))); }
+	  });
+	
+	  return ops;
+	};
+	
+	var primitiveTypeDiff = function (a, b, p) {
+	  var path = p || '';
+	  if(a === b){ return []; }
+	  else{
+	    return [ op('replace', concatPath(path, ''), b) ];
+	  }
+	};
+	
+	var diff = function(a, b, p){
+	  if(a != b && (a == null || b == null)){ return Immutable.fromJS([op('replace', '/', b)]); }
+	  if(isIndexed(a) && isIndexed(b)){
+	    return Immutable.fromJS(sequenceDiff(a, b));
+	  }
+	  else if(isMap(a) && isMap(b)){
+	    return Immutable.fromJS(mapDiff(a, b));
+	  }
+	  else{
+	    return Immutable.fromJS(primitiveTypeDiff(a, b, p));
+	  }
+	};
+	
+	module.exports = diff;
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var Immutable = __webpack_require__(4);
+	
+	var isMap = function(obj){ return Immutable.Iterable.isKeyed(obj); };
+	var isIndexed = function(obj) { return Immutable.Iterable.isIndexed(obj); };
+	
+	var op = function(operation, path, value){
+	  if(operation === 'remove') { return { op: operation, path: path }; }
+	
+	  return { op: operation, path: path, value: value };
+	};
+	
+	module.exports = {
+	  isMap: isMap,
+	  isIndexed: isIndexed,
+	  op: op
+	};
+
+/***/ },
+/* 15 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var Immutable = __webpack_require__(4);
+	
+	/**
+	 * Returns a two-dimensional array (an array of arrays) with dimensions n by m.
+	 * All the elements of this new matrix are initially equal to x
+	 * @param n number of rows
+	 * @param m number of columns
+	 * @param x initial element for every item in matrix
+	 */
+	var makeMatrix = function(n, m, x){
+	  var matrix = [];
+	  for(var i = 0; i < n; i++) {
+	    matrix[i] = new Array(m);
+	
+	    if(x != null){
+	      for(var j = 0; j < m; j++){
+	        matrix[i][j] = x;
+	      }
+	    }
+	  }
+	
+	  return matrix;
+	};
+	
+	/**
+	 * Computes Longest Common Subsequence between two Immutable.JS Indexed Iterables
+	 * Based on Dynamic Programming http://rosettacode.org/wiki/Longest_common_subsequence#Java
+	 * @param xs ImmutableJS Indexed Sequence 1
+	 * @param ys ImmutableJS Indexed Sequence 2
+	 */
+	var lcs = function(xs, ys){
+	  var matrix = computeLcsMatrix(xs, ys);
+	
+	  return backtrackLcs(xs, ys, matrix);
+	};
+	
+	var DiffResult = Immutable.Record({op: '=', val: null});
+	var ReplaceResult = Immutable.Record({op: '!=', val: null, newVal: null});
+	
+	/**
+	 * Returns the resulting diff operations of LCS between two sequences
+	 * @param xs Indexed Sequence 1
+	 * @param ys Indexed Sequence 2
+	 * @returns Array of DiffResult {op:'=' | '+' | '-', val:any}
+	 */
+	var diff = function(xs, ys){
+	  var matrix = computeLcsMatrix(xs, ys);
+	
+	  return printDiff(matrix, xs, ys, xs.size||0, ys.size||0);
+	};
+	
+	var printDiff = function(matrix, xs, ys, i, j) {
+	  if(i === 0 && j === 0) { return []; }
+	  if (i > 0 && j > 0 && Immutable.is(xs.get(i-1), ys.get(j-1))) {
+	    return printDiff(matrix, xs, ys, i - 1, j - 1).concat(new DiffResult({
+	      op: '=',
+	      val: xs.get(i - 1)
+	    }));
+	  }
+	  else if (i > 0 && j > 0 && i === j && !Immutable.is(xs.get(i-1), ys.get(j-1))) {
+	    return printDiff(matrix, xs, ys, i - 1, j - 1).concat(new ReplaceResult({
+	      val: xs.get(i - 1),
+	      newVal: ys.get(i - 1)
+	    }));
+	  }
+	  else {
+	    if (j > 0 && (i === 0 || matrix[i][j - 1] >= matrix[i - 1][j])) {
+	      return printDiff(matrix, xs, ys, i, j - 1).concat(new DiffResult({
+	        op: '+',
+	        val: ys.get(j - 1)
+	      }));
+	    }
+	    else if (i > 0 && (j === 0 || matrix[i][j - 1] < matrix[i - 1][j])) {
+	      return printDiff(matrix, xs, ys, i - 1, j).concat(new DiffResult({
+	        op: '-',
+	        val: xs.get(i - 1)
+	      }));
+	    }
+	  }
+	};
+	
+	/**
+	 * Computes the Longest Common Subsequence table
+	 * @param xs Indexed Sequence 1
+	 * @param ys Indexed Sequence 2
+	 */
+	function computeLcsMatrix(xs, ys) {
+	  var n = xs.size||0;
+	  var m = ys.size||0;
+	  var a = makeMatrix(n + 1, m + 1, 0);
+	
+	  for (var i = 0; i < n; i++) {
+	    for (var j = 0; j < m; j++) {
+	      if (Immutable.is(xs.get(i), ys.get(j))) {
+	        a[i + 1][j + 1] = a[i][j] + 1;
+	      }
+	      else {
+	        a[i + 1][j + 1] = Math.max(a[i + 1][j], a[i][j + 1]);
+	      }
+	    }
+	  }
+	
+	  return a;
+	}
+	
+	/**
+	 * Extracts a LCS from matrix M
+	 * @param xs Indexed Sequence 1
+	 * @param ys Indexed Sequence 2
+	 * @param matrix LCS Matrix
+	 * @returns {Array.<T>} Longest Common Subsequence
+	 */
+	var backtrackLcs = function(xs, ys, matrix){
+	  var lcs = [];
+	  for(var i = xs.size, j = ys.size; i !== 0 && j !== 0;){
+	    if (matrix[i][j] === matrix[i-1][j]){ i--; }
+	    else if (matrix[i][j] === matrix[i][j-1]){ j--; }
+	    else{
+	      if(Immutable.is(xs.get(i-1), ys.get(j-1))){
+	        lcs.push(xs.get(i-1));
+	        i--;
+	        j--;
+	      }
+	    }
+	  }
+	  return lcs.reverse();
+	};
+	
+	module.exports = {
+	  lcs: lcs,
+	  computeLcsMatrix: computeLcsMatrix,
+	  diff: diff
+	};
+
+
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	var slashRe = new RegExp('/', 'g');
+	var escapedSlashRe = new RegExp('~1', 'g');
+	var tildeRe = /~/g;
+	var escapedTildeRe = /~0/g;
+	
+	var Path = {
+	  escape: function (str) {
+	    if(typeof(str) === 'number'){
+	      return str.toString();
+	    }
+	    if(typeof(str) !== 'string'){
+	      throw 'param str (' + str + ') is not a string';
+	    }
+	
+	    return str.replace(tildeRe, '~0').replace(slashRe, '~1');
+	  },
+	
+	  unescape: function (str) {
+	    if(typeof(str) == 'string') {
+	      return str.replace(escapedSlashRe, '/').replace(escapedTildeRe, '~');
+	    }
+	    else {
+	      return str;
+	    }
+	  },
+	  concat: function(path, key){
+	    return path + '/' + key;
+	  }
+	};
+	
+	module.exports = Path;
+
+/***/ }
+/******/ ])
+});
+;
 //# sourceMappingURL=reframe.js.map

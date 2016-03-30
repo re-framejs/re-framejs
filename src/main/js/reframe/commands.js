@@ -54,6 +54,9 @@ cmd$
         ([version, db], [sync, cmd]) => {
             const handler = commandDispatcher.lookup(cmd[0]);
 
+            if (!handler) {
+                throw new Error('Command handler for "' + cmd[0] + '" not found');
+            }
             const newDb = handler(db, cmd);
 
             if (newDb !== db) {

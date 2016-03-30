@@ -1,6 +1,6 @@
 {
   "name": "re-framejs",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Reagent re-frame implementation using RxJs",
   "main": "dist/reframe.js",
   "files": [
@@ -10,9 +10,9 @@
     "README.md"
   ],
   "dependencies": {
-    "immutable": "3.7.6",
-    "react": "0.14.7",
-    "rx": "4.0.8"
+    "immutable": "*",
+    "react": "*",
+    "rx": "*"
   },
   "devDependencies": {
     "babel-core": "6.5.2",
@@ -24,7 +24,8 @@
     "webpack-dev-server": "1.14.1"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack"
   },
   "author": "Tomas Drencak",
   "license": "MIT"

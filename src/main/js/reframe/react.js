@@ -204,8 +204,10 @@ function propsView(mixin, args) {
     };
 
     let component = React.createClass(componentObj);
-
-    return React.createFactory(component);
+    let factory = React.createFactory(component);
+    return function (props, context, updater) {
+        return factory(props);
+    };
 }
 
 function vectorView(mixin, args) {

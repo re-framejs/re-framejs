@@ -783,8 +783,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	
 	    var component = React.createClass(componentObj);
-	
-	    return React.createFactory(component);
+	    var factory = React.createFactory(component);
+	    return function (props, context, updater) {
+	        return factory(props);
+	    };
 	}
 	
 	function vectorView(mixin, args) {

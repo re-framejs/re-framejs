@@ -160,9 +160,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function registerHandler() {
-	    var eventId = undefined,
-	        middleware = undefined,
-	        handlerFn = undefined;
+	    var eventId = void 0,
+	        middleware = void 0,
+	        handlerFn = void 0;
 	
 	    switch (arguments.length) {
 	        case 2:
@@ -385,7 +385,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return this.map[name];
 	        }
 	    }]);
-	
+
 	    return Dispatcher;
 	}();
 
@@ -476,7 +476,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	        }
 	    }]);
-	
+
 	    return Index;
 	}();
 
@@ -742,7 +742,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	function createComponentObj(mixins, args) {
-	    var componentObj = undefined;
+	    var componentObj = void 0;
 	    switch (args.length) {
 	        case 2:
 	            if (typeof args[1].prototype === 'undefined') {
@@ -857,7 +857,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @returns {boolean} true if component should be rerendered
 	 */
 	function shouldUpdate(props, nextProps, ignore) {
-	    var entries = undefined;
+	    var entries = void 0;
 	    if (nextProps === props || nextProps.length !== props.length) {
 	        return false;
 	    }
@@ -912,7 +912,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.path = path;
 	exports.enrich = enrich;
 	exports.after = after;
-	var immutablediff = __webpack_require__(13);
+	
+	var _immutableDiff = __webpack_require__(13);
+	
+	var _immutableDiff2 = _interopRequireDefault(_immutableDiff);
+	
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	/* eslint-disable no-console */
 	function debug(handler) {
@@ -922,7 +927,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return p && p.toJS ? p.toJS() : p;
 	        }));
 	        var newDb = handler(db, cmd),
-	            diff = immutablediff(db, newDb);
+	            diff = (0, _immutableDiff2.default)(db, newDb);
 	        diff.forEach(function (df) {
 	            return console.log(df.toJS());
 	        });
@@ -972,120 +977,127 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	var Immutable = __webpack_require__(4);
-	var utils = __webpack_require__(14);
-	var lcs = __webpack_require__(15);
-	var path = __webpack_require__(16);
-	var concatPath = path.concat,
-	                  escape = path.escape,
-	                  op = utils.op,
-	                  isMap = utils.isMap,
-	                  isIndexed = utils.isIndexed;
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.default = diff;
 	
-	var mapDiff = function(a, b, p){
+	var _immutable = __webpack_require__(4);
+	
+	var _lcs = __webpack_require__(14);
+	
+	var isMap = _immutable.Map.isMap;
+	var isIndexed = _immutable.Iterable.isIndexed;
+	
+	function op(operation, path, value) {
+	  if (operation === 'remove') {
+	    return { op: operation, path: path };
+	  }
+	  return { op: operation, path: path, value: value };
+	}
+	
+	function mapDiff(a, b) {
+	  var path = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
+	
 	  var ops = [];
-	  var path = p || '';
 	
-	  if(Immutable.is(a, b) || (a == b == null)){ return ops; }
+	  if ((0, _immutable.is)(a, b)) {
+	    return ops;
+	  }
 	
-	  var areLists = isIndexed(a) && isIndexed(b);
+	  var areIndexed = isIndexed(a) && isIndexed(b);
 	  var lastKey = null;
-	  var removeKey = null
+	  var removeKey = null;
 	
-	  if(a.forEach){
-	    a.forEach(function(aValue, aKey){
-	      if(b.has(aKey)){
-	        if(isMap(aValue) && isMap(b.get(aKey))){
-	          ops = ops.concat(mapDiff(aValue, b.get(aKey), concatPath(path, escape(aKey))));
-	        }
-	        else if(isIndexed(b.get(aKey)) && isIndexed(aValue)){
-	          ops = ops.concat(sequenceDiff(aValue, b.get(aKey), concatPath(path, escape(aKey))));
-	        }
-	        else {
+	  if (a.forEach) {
+	    a.forEach(function (aValue, aKey) {
+	      if (b.has(aKey)) {
+	        if (isMap(aValue) && isMap(b.get(aKey))) {
+	          ops = ops.concat(mapDiff(aValue, b.get(aKey), path.concat(aKey)));
+	        } else if (isIndexed(b.get(aKey)) && isIndexed(aValue)) {
+	          ops = ops.concat(sequenceDiff(aValue, b.get(aKey), path.concat(aKey)));
+	        } else {
 	          var bValue = b.get ? b.get(aKey) : b;
-	          var areDifferentValues = (aValue !== bValue);
+	          var areDifferentValues = aValue !== bValue;
 	          if (areDifferentValues) {
-	            ops.push(op('replace', concatPath(path, escape(aKey)), bValue));
+	            ops.push(op('replace', path.concat(aKey), bValue));
 	          }
 	        }
-	      }
-	      else {
-	        if(areLists){
-	          removeKey = (lastKey != null && (lastKey+1) === aKey) ? removeKey : aKey;
-	          ops.push( op('remove', concatPath(path, escape(removeKey))) );
-	          lastKey = aKey;
-	        }
-	        else{
-	          ops.push( op('remove', concatPath(path, escape(aKey))) );
-	        }
-	        
+	      } else if (areIndexed) {
+	        removeKey = lastKey != null && lastKey + 1 === aKey ? removeKey : aKey;
+	        ops.push(op('remove', path.concat(removeKey)));
+	        lastKey = aKey;
+	      } else {
+	        ops.push(op('remove', path.concat(aKey)));
 	      }
 	    });
 	  }
 	
-	  b.forEach(function(bValue, bKey){
-	    if(a.has && !a.has(bKey)){
-	      ops.push( op('add', concatPath(path, escape(bKey)), bValue) );
+	  b.forEach(function (bValue, bKey) {
+	    if (a.has && !a.has(bKey)) {
+	      ops.push(op('add', path.concat(bKey), bValue));
 	    }
 	  });
 	
 	  return ops;
-	};
+	}
 	
-	var sequenceDiff = function (a, b, p) {
+	function sequenceDiff(a, b) {
+	  var path = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
+	
 	  var ops = [];
-	  var path = p || '';
-	  if(Immutable.is(a, b) || (a == b == null)){ return ops; }
-	  if(b.count() > 100) { return mapDiff(a, b, p); }
+	  if ((0, _immutable.is)(a, b)) {
+	    return ops;
+	  }
+	  if (b.count() > 100) {
+	    return mapDiff(a, b, path);
+	  }
 	
-	  var lcsDiff = lcs.diff(a, b);
+	  var lcsDiff = (0, _lcs.diff)(a, b);
 	
 	  var pathIndex = 0;
 	
 	  lcsDiff.forEach(function (diff) {
-	    if(diff.op === '='){ pathIndex++; }
-	    else if(diff.op === '!='){
-	      if(isMap(diff.val) && isMap(diff.newVal)){
-	        var mapDiffs = mapDiff(diff.val, diff.newVal, concatPath(path, pathIndex));
+	    if (diff.op === '=') {
+	      pathIndex++;
+	    } else if (diff.op === '!=') {
+	      if (isMap(diff.val) && isMap(diff.newVal)) {
+	        var mapDiffs = mapDiff(diff.val, diff.newVal, path.concat(pathIndex));
 	        ops = ops.concat(mapDiffs);
-	      }
-	      else{
-	        ops.push(op('replace', concatPath(path, pathIndex), diff.newVal));
+	      } else {
+	        ops.push(op('replace', path.concat(pathIndex), diff.newVal));
 	      }
 	      pathIndex++;
-	    }
-	    else if(diff.op === '+'){
-	      ops.push(op('add', concatPath(path, pathIndex), diff.val));
+	    } else if (diff.op === '+') {
+	      ops.push(op('add', path.concat(pathIndex), diff.val));
 	      pathIndex++;
+	    } else if (diff.op === '-') {
+	      ops.push(op('remove', path.concat(pathIndex)));
 	    }
-	    else if(diff.op === '-'){ ops.push(op('remove', concatPath(path, pathIndex))); }
 	  });
 	
 	  return ops;
-	};
+	}
 	
-	var primitiveTypeDiff = function (a, b, p) {
-	  var path = p || '';
-	  if(a === b){ return []; }
-	  else{
-	    return [ op('replace', concatPath(path, ''), b) ];
-	  }
-	};
+	function primitiveTypeDiff(a, b) {
+	  var path = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
 	
-	var diff = function(a, b, p){
-	  if(a != b && (a == null || b == null)){ return Immutable.fromJS([op('replace', '/', b)]); }
-	  if(isIndexed(a) && isIndexed(b)){
-	    return Immutable.fromJS(sequenceDiff(a, b));
+	  if (a === b) {
+	    return [];
+	  } else {
+	    return [op('replace', path, b)];
 	  }
-	  else if(isMap(a) && isMap(b)){
-	    return Immutable.fromJS(mapDiff(a, b));
-	  }
-	  else{
-	    return Immutable.fromJS(primitiveTypeDiff(a, b, p));
-	  }
-	};
+	}
 	
-	module.exports = diff;
+	function diff(a, b, path) {
+	  if (isIndexed(a) && isIndexed(b)) {
+	    return (0, _immutable.fromJS)(sequenceDiff(a, b));
+	  }
+	  if (isMap(a) && isMap(b)) {
+	    return (0, _immutable.fromJS)(mapDiff(a, b));
+	  }
+	  return (0, _immutable.fromJS)(primitiveTypeDiff(a, b, path));
+	}
 
 /***/ },
 /* 14 */
@@ -1093,30 +1105,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	var Immutable = __webpack_require__(4);
+	Object.defineProperty(exports, "__esModule", {
+	  value: true
+	});
+	exports.lcs = lcs;
+	exports.diff = diff;
+	exports.backtrackLcs = backtrackLcs;
 	
-	var isMap = function(obj){ return Immutable.Iterable.isKeyed(obj); };
-	var isIndexed = function(obj) { return Immutable.Iterable.isIndexed(obj); };
-	
-	var op = function(operation, path, value){
-	  if(operation === 'remove') { return { op: operation, path: path }; }
-	
-	  return { op: operation, path: path, value: value };
-	};
-	
-	module.exports = {
-	  isMap: isMap,
-	  isIndexed: isIndexed,
-	  op: op
-	};
-
-/***/ },
-/* 15 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	var Immutable = __webpack_require__(4);
+	var _immutable = __webpack_require__(4);
 	
 	/**
 	 * Returns a two-dimensional array (an array of arrays) with dimensions n by m.
@@ -1125,15 +1121,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param m number of columns
 	 * @param x initial element for every item in matrix
 	 */
-	var makeMatrix = function(n, m, x){
+	function makeMatrix(n, m, x) {
 	  var matrix = [];
-	  for(var i = 0; i < n; i++) {
+	  for (var i = 0; i < n; i++) {
 	    matrix[i] = new Array(m);
-	
-	    if(x != null){
-	      for(var j = 0; j < m; j++){
-	        matrix[i][j] = x;
-	      }
+	    for (var j = 0; j < m; j++) {
+	      matrix[i][j] = x;
 	    }
 	  }
 	
@@ -1146,14 +1139,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param xs ImmutableJS Indexed Sequence 1
 	 * @param ys ImmutableJS Indexed Sequence 2
 	 */
-	var lcs = function(xs, ys){
+	function lcs(xs, ys) {
 	  var matrix = computeLcsMatrix(xs, ys);
 	
 	  return backtrackLcs(xs, ys, matrix);
 	};
 	
-	var DiffResult = Immutable.Record({op: '=', val: null});
-	var ReplaceResult = Immutable.Record({op: '!=', val: null, newVal: null});
+	var DiffResult = (0, _immutable.Record)({ op: '=', val: null });
+	var ReplaceResult = (0, _immutable.Record)({ op: '!=', val: null, newVal: null });
 	
 	/**
 	 * Returns the resulting diff operations of LCS between two sequences
@@ -1161,39 +1154,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param ys Indexed Sequence 2
 	 * @returns Array of DiffResult {op:'=' | '+' | '-', val:any}
 	 */
-	var diff = function(xs, ys){
+	function diff(xs, ys) {
 	  var matrix = computeLcsMatrix(xs, ys);
 	
-	  return printDiff(matrix, xs, ys, xs.size||0, ys.size||0);
+	  return printDiff(matrix, xs, ys, xs.size || 0, ys.size || 0);
 	};
 	
-	var printDiff = function(matrix, xs, ys, i, j) {
-	  if(i === 0 && j === 0) { return []; }
-	  if (i > 0 && j > 0 && Immutable.is(xs.get(i-1), ys.get(j-1))) {
+	function printDiff(matrix, xs, ys, i, j) {
+	  if (i === 0 && j === 0) {
+	    return [];
+	  }
+	  if (i > 0 && j > 0 && (0, _immutable.is)(xs.get(i - 1), ys.get(j - 1))) {
 	    return printDiff(matrix, xs, ys, i - 1, j - 1).concat(new DiffResult({
 	      op: '=',
 	      val: xs.get(i - 1)
 	    }));
-	  }
-	  else if (i > 0 && j > 0 && i === j && !Immutable.is(xs.get(i-1), ys.get(j-1))) {
+	  } else if (i > 0 && j > 0 && i === j && !(0, _immutable.is)(xs.get(i - 1), ys.get(j - 1))) {
 	    return printDiff(matrix, xs, ys, i - 1, j - 1).concat(new ReplaceResult({
 	      val: xs.get(i - 1),
 	      newVal: ys.get(i - 1)
 	    }));
-	  }
-	  else {
-	    if (j > 0 && (i === 0 || matrix[i][j - 1] >= matrix[i - 1][j])) {
-	      return printDiff(matrix, xs, ys, i, j - 1).concat(new DiffResult({
-	        op: '+',
-	        val: ys.get(j - 1)
-	      }));
-	    }
-	    else if (i > 0 && (j === 0 || matrix[i][j - 1] < matrix[i - 1][j])) {
-	      return printDiff(matrix, xs, ys, i - 1, j).concat(new DiffResult({
-	        op: '-',
-	        val: xs.get(i - 1)
-	      }));
-	    }
+	  } else if (j > 0 && (i === 0 || matrix[i][j - 1] >= matrix[i - 1][j])) {
+	    return printDiff(matrix, xs, ys, i, j - 1).concat(new DiffResult({
+	      op: '+',
+	      val: ys.get(j - 1)
+	    }));
+	  } else if (i > 0 && (j === 0 || matrix[i][j - 1] < matrix[i - 1][j])) {
+	    return printDiff(matrix, xs, ys, i - 1, j).concat(new DiffResult({
+	      op: '-',
+	      val: xs.get(i - 1)
+	    }));
 	  }
 	};
 	
@@ -1203,16 +1193,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param ys Indexed Sequence 2
 	 */
 	function computeLcsMatrix(xs, ys) {
-	  var n = xs.size||0;
-	  var m = ys.size||0;
+	  var n = xs.size || 0;
+	  var m = ys.size || 0;
 	  var a = makeMatrix(n + 1, m + 1, 0);
 	
 	  for (var i = 0; i < n; i++) {
 	    for (var j = 0; j < m; j++) {
-	      if (Immutable.is(xs.get(i), ys.get(j))) {
+	      if ((0, _immutable.is)(xs.get(i), ys.get(j))) {
 	        a[i + 1][j + 1] = a[i][j] + 1;
-	      }
-	      else {
+	      } else {
 	        a[i + 1][j + 1] = Math.max(a[i + 1][j], a[i][j + 1]);
 	      }
 	    }
@@ -1228,66 +1217,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param matrix LCS Matrix
 	 * @returns {Array.<T>} Longest Common Subsequence
 	 */
-	var backtrackLcs = function(xs, ys, matrix){
+	function backtrackLcs(xs, ys, matrix) {
 	  var lcs = [];
-	  for(var i = xs.size, j = ys.size; i !== 0 && j !== 0;){
-	    if (matrix[i][j] === matrix[i-1][j]){ i--; }
-	    else if (matrix[i][j] === matrix[i][j-1]){ j--; }
-	    else{
-	      if(Immutable.is(xs.get(i-1), ys.get(j-1))){
-	        lcs.push(xs.get(i-1));
-	        i--;
-	        j--;
-	      }
+	  for (var i = xs.size, j = ys.size; i !== 0 && j !== 0;) {
+	    if (matrix[i][j] === matrix[i - 1][j]) {
+	      i--;
+	    } else if (matrix[i][j] === matrix[i][j - 1]) {
+	      j--;
+	    } else if ((0, _immutable.is)(xs.get(i - 1), ys.get(j - 1))) {
+	      lcs.push(xs.get(i - 1));
+	      i--;
+	      j--;
 	    }
 	  }
 	  return lcs.reverse();
 	};
-	
-	module.exports = {
-	  lcs: lcs,
-	  computeLcsMatrix: computeLcsMatrix,
-	  diff: diff
-	};
-
-
-/***/ },
-/* 16 */
-/***/ function(module, exports) {
-
-	'use strict';
-	
-	var slashRe = new RegExp('/', 'g');
-	var escapedSlashRe = new RegExp('~1', 'g');
-	var tildeRe = /~/g;
-	var escapedTildeRe = /~0/g;
-	
-	var Path = {
-	  escape: function (str) {
-	    if(typeof(str) === 'number'){
-	      return str.toString();
-	    }
-	    if(typeof(str) !== 'string'){
-	      throw 'param str (' + str + ') is not a string';
-	    }
-	
-	    return str.replace(tildeRe, '~0').replace(slashRe, '~1');
-	  },
-	
-	  unescape: function (str) {
-	    if(typeof(str) == 'string') {
-	      return str.replace(escapedSlashRe, '/').replace(escapedTildeRe, '~');
-	    }
-	    else {
-	      return str;
-	    }
-	  },
-	  concat: function(path, key){
-	    return path + '/' + key;
-	  }
-	};
-	
-	module.exports = Path;
 
 /***/ }
 /******/ ])

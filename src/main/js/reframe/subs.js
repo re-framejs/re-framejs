@@ -13,7 +13,7 @@ animationFrame$
     .filter(Boolean)
     .doOnNext(v => {
     if (!scheduled) {
-        requestAnimationFrame(() => {
+        requestAnimationFrame(function onRequestAnimationFrame() {
             animationFrame$1.onNext(animationFrame$.getValue());
             scheduled = false;
         });
@@ -23,7 +23,7 @@ animationFrame$
 
 Rx.Observable
     .merge(animationFrame$1, sync$)
-    .scan(([oldVersion, oldDb], [newVersion, newDb])=> {
+    .scan(function dbAnimationFrameTransition([oldVersion, oldDb], [newVersion, newDb]) {
         if (newVersion > oldVersion) {
             return [newVersion, newDb];
         }
@@ -31,7 +31,7 @@ Rx.Observable
     }, [-1, null])
     .map(([version, db]) => db)
     .distinctUntilChanged(x => x, (x, y) => x === y)
-    .doOnNext(db => {
+    .doOnNext(function fireRender(db) {
         requestRender$.onNext(db);
         render$.onNext(true);
     })

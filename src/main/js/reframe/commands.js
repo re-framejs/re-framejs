@@ -51,7 +51,7 @@ export function dispatchSync(cmd) {
 
 cmd$
     .scan(
-        ([version, db], [sync, cmd]) => {
+        function dbStateTransition([version, db], [sync, cmd]) {
             const handler = commandDispatcher.lookup(cmd[0]);
 
             if (!handler) {

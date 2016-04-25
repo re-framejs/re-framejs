@@ -192,7 +192,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    cmd$.onNext([true, cmd]);
 	}
 	
-	cmd$.scan(function (_ref, _ref2) {
+	cmd$.scan(function dbStateTransition(_ref, _ref2) {
 	    var _ref4 = _slicedToArray(_ref, 2);
 	
 	    var version = _ref4[0];
@@ -295,7 +295,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var scheduled = false;
 	animationFrame$.filter(Boolean).doOnNext(function (v) {
 	    if (!scheduled) {
-	        requestAnimationFrame(function () {
+	        requestAnimationFrame(function onRequestAnimationFrame() {
 	            animationFrame$1.onNext(animationFrame$.getValue());
 	            scheduled = false;
 	        });
@@ -303,7 +303,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	}).subscribe();
 	
-	Rx.Observable.merge(animationFrame$1, sync$).scan(function (_ref, _ref2) {
+	Rx.Observable.merge(animationFrame$1, sync$).scan(function dbAnimationFrameTransition(_ref, _ref2) {
 	    var _ref4 = _slicedToArray(_ref, 2);
 	
 	    var oldVersion = _ref4[0];
@@ -328,7 +328,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return x;
 	}, function (x, y) {
 	    return x === y;
-	}).doOnNext(function (db) {
+	}).doOnNext(function fireRender(db) {
 	    requestRender$.onNext(db);
 	    render$.onNext(true);
 	}).subscribe();
@@ -779,6 +779,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var componentObj = createComponentObj(mixin, args);
 	    var oldRender = componentObj.render;
 	    componentObj.render = function () {
+	        console.log('Render ', this.getDisplayName());
 	        return oldRender.call(this, this.props);
 	    };
 	
@@ -793,6 +794,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var componentObj = createComponentObj(mixin, args);
 	    var oldRender = componentObj.render;
 	    componentObj.render = function () {
+	        console.log('Render ', this.getDisplayName());
 	        return oldRender.apply(this, this.props.argv);
 	    };
 	    var component = React.createClass(componentObj);

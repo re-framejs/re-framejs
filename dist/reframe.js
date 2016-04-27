@@ -443,8 +443,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    if (old) {
 	                        return old;
 	                    }
-	                    var subject = new Rx.ReplaySubject(1),
-	                        subscription = parentRx.map(function (a) {
+	                    var subject = parentRx.map(function (a) {
 	                        if (a && a.get) {
 	                            return a.get(lastFragment);
 	                        }
@@ -452,17 +451,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	                        return x;
 	                    }, function (x, y) {
 	                        return x === y;
-	                    })
-	                    //.doOnNext(v => console.log('v', v.toJS()))
-	                    .subscribe(subject);
+	                    }).shareReplay(1);
 	                    var oldSubscribe = subject.subscribe;
 	                    subject.subscribe = function () {
-	                        var sub = oldSubscribe.apply(this, arguments);
+	                        var sub = oldSubscribe.apply(this, arguments),
+	                            s = this;
 	
 	                        return Rx.Disposable.create(function () {
 	                            sub.dispose();
-	                            if (!subject.hasObservers()) {
-	                                subscription.dispose();
+	                            if (s._count === 0) {
 	                                self.listeners = self.listeners.removeIn(pathSlice);
 	                            }
 	                        });
@@ -614,7 +611,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var StatelessMixin = exports.StatelessMixin = {
 	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
-	        return (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv']) || (0, _shouldupdate.shouldUpdate)(this.state, nextState) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv);
+	        return (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.state, nextState) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv);
 	    },
 	    getDisplayName: function getDisplayName() {
 	        return this.constructor.displayName;
@@ -695,7 +692,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        };
 	    },
 	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
-	        var updateByProps = (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv']) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv),
+	        var updateByProps = (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv),
 	            updateByState = (0, _shouldupdate.shouldUpdate)(this.state, nextState, ['derefed', 'renderOrder', 'renderCycle']);
 	
 	        return updateByProps || updateByState;
@@ -779,14 +776,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var componentObj = createComponentObj(mixin, args);
 	    var oldRender = componentObj.render;
 	    componentObj.render = function () {
-	        console.log('Render ', this.getDisplayName());
 	        return oldRender.call(this, this.props);
 	    };
 	
 	    var component = React.createClass(componentObj);
 	    var factory = React.createFactory(component);
 	    return function (props, context, updater) {
-	        return factory(props);
+	        return factory(props, context);
 	    };
 	}
 	
@@ -794,7 +790,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var componentObj = createComponentObj(mixin, args);
 	    var oldRender = componentObj.render;
 	    componentObj.render = function () {
-	        console.log('Render ', this.getDisplayName());
 	        return oldRender.apply(this, this.props.argv);
 	    };
 	    var component = React.createClass(componentObj);

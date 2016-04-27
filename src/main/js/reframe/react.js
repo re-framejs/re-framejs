@@ -50,7 +50,7 @@ subs.render$
 
 export let StatelessMixin = {
     shouldComponentUpdate: function (nextProps, nextState) {
-        return shouldUpdate(this.props, nextProps, ['argv']) || shouldUpdate(this.state, nextState) || shouldUpdate(this.props.argv, nextProps.argv);
+        return shouldUpdate(this.props, nextProps, ['argv', 'ctx']) || shouldUpdate(this.state, nextState) || shouldUpdate(this.props.argv, nextProps.argv);
     },
     getDisplayName: function () {
         return this.constructor.displayName;
@@ -119,7 +119,7 @@ export let SubscriptionMixin = {
         };
     },
     shouldComponentUpdate: function (nextProps, nextState) {
-        let updateByProps = shouldUpdate(this.props, nextProps, ['argv']) || shouldUpdate(this.props.argv, nextProps.argv),
+        let updateByProps = shouldUpdate(this.props, nextProps, ['argv', 'ctx']) || shouldUpdate(this.props.argv, nextProps.argv),
             updateByState = shouldUpdate(this.state, nextState, ['derefed', 'renderOrder', 'renderCycle']);
 
         return updateByProps || updateByState;
@@ -206,7 +206,7 @@ function propsView(mixin, args) {
     let component = React.createClass(componentObj);
     let factory = React.createFactory(component);
     return function (props, context, updater) {
-        return factory(props);
+        return factory(props, context);
     };
 }
 

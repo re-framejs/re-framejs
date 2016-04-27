@@ -25,24 +25,22 @@ export class Index {
                     if (old) {
                         return old;
                     }
-                    let subject = new Rx.ReplaySubject(1),
-                        subscription = parentRx
-                            .map(a => {
-                                if (a && a.get) {
-                                    return a.get(lastFragment);
-                                }
-                            })
-                            .distinctUntilChanged(x => x, (x, y) => x === y)
-                            //.doOnNext(v => console.log('v', v.toJS()))
-                            .subscribe(subject);
+                    const subject = parentRx
+                        .map(a => {
+                            if (a && a.get) {
+                                return a.get(lastFragment);
+                            }
+                        })
+                        .distinctUntilChanged(x => x, (x, y) => x === y)
+                        .shareReplay(1);
                     let oldSubscribe = subject.subscribe;
                     subject.subscribe = function () {
-                        const sub = oldSubscribe.apply(this, arguments);
+                        const sub = oldSubscribe.apply(this, arguments),
+                            s = this;
 
                         return Rx.Disposable.create(function () {
                             sub.dispose();
-                            if (!subject.hasObservers()) {
-                                subscription.dispose();
+                            if (s._count === 0) {
                                 self.listeners = self.listeners.removeIn(pathSlice);
                             }
                         });

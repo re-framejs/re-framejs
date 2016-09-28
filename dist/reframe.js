@@ -208,7 +208,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (!handler) {
 	        throw new Error('Command handler for "' + cmd[0] + '" not found');
 	    }
-	    var newDb = handler(db, cmd);
+	
+	    var newDb = void 0;
+	
+	    try {
+	        newDb = handler(db, cmd);
+	    } catch (err) {
+	        console.log("Error in handler: ", err);
+	        newDb = db;
+	    }
 	
 	    if (newDb !== db) {
 	        _db.db$.onNext(newDb);

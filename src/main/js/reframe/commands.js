@@ -57,7 +57,15 @@ cmd$
             if (!handler) {
                 throw new Error('Command handler for "' + cmd[0] + '" not found');
             }
-            const newDb = handler(db, cmd);
+
+            let newDb;
+
+            try {
+                newDb = handler(db, cmd);
+            } catch (err) {
+                console.log("Error in handler: ", err);
+                newDb = db;
+            }
 
             if (newDb !== db) {
                 db$.onNext(newDb);

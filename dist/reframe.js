@@ -76,7 +76,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var react = _interopRequireWildcard(_react);
 	
-	var _middleware = __webpack_require__(12);
+	var _middleware = __webpack_require__(13);
 	
 	var middleware = _interopRequireWildcard(_middleware);
 	
@@ -193,15 +193,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	cmd$.scan(function dbStateTransition(_ref, _ref2) {
-	    var _ref4 = _slicedToArray(_ref, 2);
+	    var _ref4 = _slicedToArray(_ref, 2),
+	        version = _ref4[0],
+	        db = _ref4[1];
 	
-	    var version = _ref4[0];
-	    var db = _ref4[1];
-	
-	    var _ref3 = _slicedToArray(_ref2, 2);
-	
-	    var sync = _ref3[0];
-	    var cmd = _ref3[1];
+	    var _ref3 = _slicedToArray(_ref2, 2),
+	        sync = _ref3[0],
+	        cmd = _ref3[1];
 	
 	    var handler = commandDispatcher.lookup(cmd[0]);
 	
@@ -312,25 +310,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	}).subscribe();
 	
 	Rx.Observable.merge(animationFrame$1, sync$).scan(function dbAnimationFrameTransition(_ref, _ref2) {
-	    var _ref4 = _slicedToArray(_ref, 2);
+	    var _ref4 = _slicedToArray(_ref, 2),
+	        oldVersion = _ref4[0],
+	        oldDb = _ref4[1];
 	
-	    var oldVersion = _ref4[0];
-	    var oldDb = _ref4[1];
-	
-	    var _ref3 = _slicedToArray(_ref2, 2);
-	
-	    var newVersion = _ref3[0];
-	    var newDb = _ref3[1];
+	    var _ref3 = _slicedToArray(_ref2, 2),
+	        newVersion = _ref3[0],
+	        newDb = _ref3[1];
 	
 	    if (newVersion > oldVersion) {
 	        return [newVersion, newDb];
 	    }
 	    return [oldVersion, oldDb];
 	}, [-1, null]).map(function (_ref5) {
-	    var _ref6 = _slicedToArray(_ref5, 2);
+	    var _ref6 = _slicedToArray(_ref5, 2),
+	        version = _ref6[0],
+	        db = _ref6[1];
 	
-	    var version = _ref6[0];
-	    var db = _ref6[1];
 	    return db;
 	}).distinctUntilChanged(function (x) {
 	    return x;
@@ -596,21 +592,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function render() {
 	    data.toUpdate.sort(function (_ref, _ref2) {
-	        var _ref4 = _slicedToArray(_ref, 1);
+	        var _ref4 = _slicedToArray(_ref, 1),
+	            o1 = _ref4[0];
 	
-	        var o1 = _ref4[0];
+	        var _ref3 = _slicedToArray(_ref2, 1),
+	            o2 = _ref3[0];
 	
-	        var _ref3 = _slicedToArray(_ref2, 1);
-	
-	        var o2 = _ref3[0];
 	        return o1 - o2;
 	    });
 	
 	    data.toUpdate.forEach(function (_ref5) {
-	        var _ref6 = _slicedToArray(_ref5, 2);
+	        var _ref6 = _slicedToArray(_ref5, 2),
+	            _ = _ref6[0],
+	            forceUpdate = _ref6[1];
 	
-	        var _ = _ref6[0];
-	        var forceUpdate = _ref6[1];
 	        return forceUpdate();
 	    });
 	    data.toUpdate = [];
@@ -840,17 +835,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: true
 	});
 	
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-	
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 	
 	exports.shouldUpdate = shouldUpdate;
 	
-	var _immutable = __webpack_require__(4);
-	
-	var Immutable = _interopRequireWildcard(_immutable);
-	
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	var _utils = __webpack_require__(12);
 	
 	/**
 	 * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
@@ -880,12 +869,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    if (entries.length) {
 	        return !entries.every(function (_ref) {
-	            var _ref2 = _slicedToArray(_ref, 2);
+	            var _ref2 = _slicedToArray(_ref, 2),
+	                value = _ref2[0],
+	                nextValue = _ref2[1];
 	
-	            var value = _ref2[0];
-	            var nextValue = _ref2[1];
-	
-	            if (isPrimitive(value) && isPrimitive(nextValue) || isImmutable(value) && isImmutable(nextValue)) {
+	            if ((0, _utils.isPrimitive)(value) && (0, _utils.isPrimitive)(nextValue) || (0, _utils.isImmutable)(value) && (0, _utils.isImmutable)(nextValue)) {
 	
 	                return value === nextValue;
 	            }
@@ -894,6 +882,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    return false;
 	}
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
+	
+	exports.isImmutable = isImmutable;
+	exports.isPrimitive = isPrimitive;
+	exports.isFunction = isFunction;
+	exports.isObject = isObject;
+	
+	var _immutable = __webpack_require__(4);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
 	function isImmutable(maybeImmutable) {
 	    return Immutable.Iterable.isIterable(maybeImmutable);
 	}
@@ -902,9 +914,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var type = typeof value === 'undefined' ? 'undefined' : _typeof(value);
 	    return type === 'number' || type === 'boolean' || type === 'string' || value === null || value === void 0;
 	}
+	
+	function isFunction(obj) {
+	    return typeof obj === 'function';
+	}
+	
+	function isObject(obj) {
+	    return (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object';
+	}
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -918,26 +938,48 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.enrich = enrich;
 	exports.after = after;
 	
-	var _immutableDiff = __webpack_require__(13);
+	var _immutableDiff = __webpack_require__(14);
 	
 	var _immutableDiff2 = _interopRequireDefault(_immutableDiff);
 	
+	var _utils = __webpack_require__(12);
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+	
+	function serialize(obj) {
+	    if (obj === null || typeof obj === 'undefined') {
+	        return obj;
+	    } else if ((0, _utils.isImmutable)(obj)) {
+	        return JSON.stringify(obj.toJS());
+	    } else if ((0, _utils.isObject)(obj)) {
+	        return JSON.stringify(obj);
+	    }
+	    return obj;
+	}
 	
 	/* eslint-disable no-console */
 	function debug(handler) {
 	    return function (db, cmd) {
 	        console.log('-- New Event ----------------------------------------------------');
-	        console.groupCollapsed('re-frame event: ', cmd.map(function (p) {
+	        console.groupCollapsed('re-frame event: ', cmd.map(serialize));
+	        console.log('Event: ', cmd.map(function (p) {
 	            return p && p.toJS ? p.toJS() : p;
 	        }));
-	        var newDb = handler(db, cmd),
-	            diff = (0, _immutableDiff2.default)(db, newDb);
-	        diff.forEach(function (df) {
-	            return console.log(df.toJS());
-	        });
-	        console.groupEnd();
-	        return newDb;
+	        try {
+	            var newDb = handler(db, cmd),
+	                diff = (0, _immutableDiff2.default)(db, newDb);
+	            diff.forEach(function (df) {
+	                var _df$toJS = df.toJS(),
+	                    op = _df$toJS.op,
+	                    path = _df$toJS.path,
+	                    value = _df$toJS.value;
+	
+	                console.log(op, path, value);
+	            });
+	            return newDb;
+	        } finally {
+	            console.groupEnd();
+	        }
 	    };
 	}
 	/* eslint-enable no-console */
@@ -977,7 +1019,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -989,7 +1031,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _immutable = __webpack_require__(4);
 	
-	var _lcs = __webpack_require__(14);
+	var _lcs = __webpack_require__(15);
 	
 	var isMap = _immutable.Map.isMap;
 	var isIndexed = _immutable.Iterable.isIndexed;
@@ -1105,7 +1147,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';

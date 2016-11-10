@@ -1,5 +1,5 @@
 'use strict';
-import * as Immutable from 'immutable';
+import {isImmutable, isPrimitive} from 'reframe/utils';
 
 /**
  * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
@@ -35,12 +35,4 @@ export function shouldUpdate(props, nextProps, ignore) {
         });
     }
     return false;
-}
-function isImmutable(maybeImmutable) {
-    return Immutable.Iterable.isIterable(maybeImmutable);
-}
-
-function isPrimitive(value) {
-    var type = typeof value;
-    return type === 'number' || type === 'boolean' || type === 'string' || value === null || value === void 0;
 }

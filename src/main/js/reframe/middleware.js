@@ -1,6 +1,6 @@
 'use strict';
 
-import immutablediff from 'immutable-diff';
+import immutablediff from 'immutablediff';
 import {isImmutable, isPrimitive, isFunction, isObject} from 'reframe/utils';
 
 
@@ -25,8 +25,7 @@ export function debug(handler) {
             let newDb = handler(db, cmd),
                 diff = immutablediff(db, newDb);
             diff.forEach(df => {
-                const {op, path, value} = df.toJS();
-                console.log(op, path, value);
+                console.log(df.get('op'), df.get('path'), df.get('value'));
             });
             return newDb;
         } finally {

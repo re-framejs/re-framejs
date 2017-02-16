@@ -938,9 +938,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.enrich = enrich;
 	exports.after = after;
 	
-	var _immutableDiff = __webpack_require__(14);
+	var _immutablediff = __webpack_require__(14);
 	
-	var _immutableDiff2 = _interopRequireDefault(_immutableDiff);
+	var _immutablediff2 = _interopRequireDefault(_immutablediff);
 	
 	var _utils = __webpack_require__(12);
 	
@@ -967,14 +967,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }));
 	        try {
 	            var newDb = handler(db, cmd),
-	                diff = (0, _immutableDiff2.default)(db, newDb);
+	                diff = (0, _immutablediff2.default)(db, newDb);
 	            diff.forEach(function (df) {
-	                var _df$toJS = df.toJS(),
-	                    op = _df$toJS.op,
-	                    path = _df$toJS.path,
-	                    value = _df$toJS.value;
-	
-	                console.log(op, path, value);
+	                console.log(df.get('op'), df.get('path'), df.get('value'));
 	            });
 	            return newDb;
 	        } finally {
@@ -1024,127 +1019,122 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.default = diff;
+	var Immutable = __webpack_require__(4);
+	var utils = __webpack_require__(15);
+	var lcs = __webpack_require__(16);
+	var path = __webpack_require__(17);
+	var concatPath = path.concat,
+	                  escape = path.escape,
+	                  op = utils.op,
+	                  isMap = utils.isMap,
+	                  isIndexed = utils.isIndexed;
 	
-	var _immutable = __webpack_require__(4);
-	
-	var _lcs = __webpack_require__(15);
-	
-	var isMap = _immutable.Map.isMap;
-	var isIndexed = _immutable.Iterable.isIndexed;
-	
-	function op(operation, path, value) {
-	  if (operation === 'remove') {
-	    return { op: operation, path: path };
-	  }
-	  return { op: operation, path: path, value: value };
-	}
-	
-	function mapDiff(a, b) {
-	  var path = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
-	
+	var mapDiff = function(a, b, p){
 	  var ops = [];
+	  var path = p || '';
 	
-	  if ((0, _immutable.is)(a, b)) {
-	    return ops;
-	  }
+	  if(Immutable.is(a, b) || (a == b == null)){ return ops; }
 	
-	  var areIndexed = isIndexed(a) && isIndexed(b);
+	  var areLists = isIndexed(a) && isIndexed(b);
 	  var lastKey = null;
-	  var removeKey = null;
+	  var removeKey = null
 	
-	  if (a.forEach) {
-	    a.forEach(function (aValue, aKey) {
-	      if (b.has(aKey)) {
-	        if (isMap(aValue) && isMap(b.get(aKey))) {
-	          ops = ops.concat(mapDiff(aValue, b.get(aKey), path.concat(aKey)));
-	        } else if (isIndexed(b.get(aKey)) && isIndexed(aValue)) {
-	          ops = ops.concat(sequenceDiff(aValue, b.get(aKey), path.concat(aKey)));
-	        } else {
+	  if(a.forEach){
+	    a.forEach(function(aValue, aKey){
+	      if(b.has(aKey)){
+	        if(isMap(aValue) && isMap(b.get(aKey))){
+	          ops = ops.concat(mapDiff(aValue, b.get(aKey), concatPath(path, escape(aKey))));
+	        }
+	        else if(isIndexed(b.get(aKey)) && isIndexed(aValue)){
+	          ops = ops.concat(sequenceDiff(aValue, b.get(aKey), concatPath(path, escape(aKey))));
+	        }
+	        else {
 	          var bValue = b.get ? b.get(aKey) : b;
-	          var areDifferentValues = aValue !== bValue;
+	          var areDifferentValues = (aValue !== bValue);
 	          if (areDifferentValues) {
-	            ops.push(op('replace', path.concat(aKey), bValue));
+	            ops.push(op('replace', concatPath(path, escape(aKey)), bValue));
 	          }
 	        }
-	      } else if (areIndexed) {
-	        removeKey = lastKey != null && lastKey + 1 === aKey ? removeKey : aKey;
-	        ops.push(op('remove', path.concat(removeKey)));
-	        lastKey = aKey;
-	      } else {
-	        ops.push(op('remove', path.concat(aKey)));
+	      }
+	      else {
+	        if(areLists){
+	          removeKey = (lastKey != null && (lastKey+1) === aKey) ? removeKey : aKey;
+	          ops.push( op('remove', concatPath(path, escape(removeKey))) );
+	          lastKey = aKey;
+	        }
+	        else{
+	          ops.push( op('remove', concatPath(path, escape(aKey))) );
+	        }
+	
 	      }
 	    });
 	  }
 	
-	  b.forEach(function (bValue, bKey) {
-	    if (a.has && !a.has(bKey)) {
-	      ops.push(op('add', path.concat(bKey), bValue));
+	  b.forEach(function(bValue, bKey){
+	    if(a.has && !a.has(bKey)){
+	      ops.push( op('add', concatPath(path, escape(bKey)), bValue) );
 	    }
 	  });
 	
 	  return ops;
-	}
+	};
 	
-	function sequenceDiff(a, b) {
-	  var path = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
-	
+	var sequenceDiff = function (a, b, p) {
 	  var ops = [];
-	  if ((0, _immutable.is)(a, b)) {
-	    return ops;
-	  }
-	  if (b.count() > 100) {
-	    return mapDiff(a, b, path);
-	  }
+	  var path = p || '';
+	  if(Immutable.is(a, b) || (a == b == null)){ return ops; }
+	  if((a.count() + 1) * (b.count() + 1) >= 10000 ) { return mapDiff(a, b, p); }
 	
-	  var lcsDiff = (0, _lcs.diff)(a, b);
+	  var lcsDiff = lcs.diff(a, b);
 	
 	  var pathIndex = 0;
 	
 	  lcsDiff.forEach(function (diff) {
-	    if (diff.op === '=') {
-	      pathIndex++;
-	    } else if (diff.op === '!=') {
-	      if (isMap(diff.val) && isMap(diff.newVal)) {
-	        var mapDiffs = mapDiff(diff.val, diff.newVal, path.concat(pathIndex));
+	    if(diff.op === '='){ pathIndex++; }
+	    else if(diff.op === '!='){
+	      if(isMap(diff.val) && isMap(diff.newVal)){
+	        var mapDiffs = mapDiff(diff.val, diff.newVal, concatPath(path, pathIndex));
 	        ops = ops.concat(mapDiffs);
-	      } else {
-	        ops.push(op('replace', path.concat(pathIndex), diff.newVal));
+	      }
+	      else{
+	        ops.push(op('replace', concatPath(path, pathIndex), diff.newVal));
 	      }
 	      pathIndex++;
-	    } else if (diff.op === '+') {
-	      ops.push(op('add', path.concat(pathIndex), diff.val));
-	      pathIndex++;
-	    } else if (diff.op === '-') {
-	      ops.push(op('remove', path.concat(pathIndex)));
 	    }
+	    else if(diff.op === '+'){
+	      ops.push(op('add', concatPath(path, pathIndex), diff.val));
+	      pathIndex++;
+	    }
+	    else if(diff.op === '-'){ ops.push(op('remove', concatPath(path, pathIndex))); }
 	  });
 	
 	  return ops;
-	}
+	};
 	
-	function primitiveTypeDiff(a, b) {
-	  var path = arguments.length <= 2 || arguments[2] === undefined ? [] : arguments[2];
+	var primitiveTypeDiff = function (a, b, p) {
+	  var path = p || '';
+	  if(a === b){ return []; }
+	  else{
+	    return [ op('replace', concatPath(path, ''), b) ];
+	  }
+	};
 	
-	  if (a === b) {
-	    return [];
-	  } else {
-	    return [op('replace', path, b)];
+	var diff = function(a, b, p){
+	  if(Immutable.is(a, b)){ return Immutable.List(); }
+	  if(a != b && (a == null || b == null)){ return Immutable.fromJS([op('replace', '/', b)]); }
+	  if(isIndexed(a) && isIndexed(b)){
+	    return Immutable.fromJS(sequenceDiff(a, b));
 	  }
-	}
+	  else if(isMap(a) && isMap(b)){
+	    return Immutable.fromJS(mapDiff(a, b));
+	  }
+	  else{
+	    return Immutable.fromJS(primitiveTypeDiff(a, b, p));
+	  }
+	};
 	
-	function diff(a, b, path) {
-	  if (isIndexed(a) && isIndexed(b)) {
-	    return (0, _immutable.fromJS)(sequenceDiff(a, b));
-	  }
-	  if (isMap(a) && isMap(b)) {
-	    return (0, _immutable.fromJS)(mapDiff(a, b));
-	  }
-	  return (0, _immutable.fromJS)(primitiveTypeDiff(a, b, path));
-	}
+	module.exports = diff;
+
 
 /***/ },
 /* 15 */
@@ -1152,14 +1142,30 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 	
-	Object.defineProperty(exports, "__esModule", {
-	  value: true
-	});
-	exports.lcs = lcs;
-	exports.diff = diff;
-	exports.backtrackLcs = backtrackLcs;
+	var Immutable = __webpack_require__(4);
 	
-	var _immutable = __webpack_require__(4);
+	var isMap = function(obj){ return Immutable.Iterable.isKeyed(obj); };
+	var isIndexed = function(obj) { return Immutable.Iterable.isIndexed(obj); };
+	
+	var op = function(operation, path, value){
+	  if(operation === 'remove') { return { op: operation, path: path }; }
+	
+	  return { op: operation, path: path, value: value };
+	};
+	
+	module.exports = {
+	  isMap: isMap,
+	  isIndexed: isIndexed,
+	  op: op
+	};
+
+/***/ },
+/* 16 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	var Immutable = __webpack_require__(4);
 	
 	/**
 	 * Returns a two-dimensional array (an array of arrays) with dimensions n by m.
@@ -1168,12 +1174,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param m number of columns
 	 * @param x initial element for every item in matrix
 	 */
-	function makeMatrix(n, m, x) {
+	var makeMatrix = function(n, m, x){
 	  var matrix = [];
-	  for (var i = 0; i < n; i++) {
+	  for(var i = 0; i < n; i++) {
 	    matrix[i] = new Array(m);
-	    for (var j = 0; j < m; j++) {
-	      matrix[i][j] = x;
+	
+	    if(x != null){
+	      for(var j = 0; j < m; j++){
+	        matrix[i][j] = x;
+	      }
 	    }
 	  }
 	
@@ -1186,14 +1195,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param xs ImmutableJS Indexed Sequence 1
 	 * @param ys ImmutableJS Indexed Sequence 2
 	 */
-	function lcs(xs, ys) {
+	var lcs = function(xs, ys){
 	  var matrix = computeLcsMatrix(xs, ys);
 	
 	  return backtrackLcs(xs, ys, matrix);
 	};
 	
-	var DiffResult = (0, _immutable.Record)({ op: '=', val: null });
-	var ReplaceResult = (0, _immutable.Record)({ op: '!=', val: null, newVal: null });
+	var DiffResult = Immutable.Record({op: '=', val: null});
+	var ReplaceResult = Immutable.Record({op: '!=', val: null, newVal: null});
 	
 	/**
 	 * Returns the resulting diff operations of LCS between two sequences
@@ -1201,37 +1210,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param ys Indexed Sequence 2
 	 * @returns Array of DiffResult {op:'=' | '+' | '-', val:any}
 	 */
-	function diff(xs, ys) {
+	var diff = function(xs, ys){
 	  var matrix = computeLcsMatrix(xs, ys);
 	
-	  return printDiff(matrix, xs, ys, xs.size || 0, ys.size || 0);
+	  return printDiff(matrix, xs, ys, xs.size||0, ys.size||0);
 	};
 	
-	function printDiff(matrix, xs, ys, i, j) {
-	  if (i === 0 && j === 0) {
-	    return [];
+	var printDiff = function(matrix, xs, ys, xSize, ySize) {
+	  var diffArray = [];
+	  var i = xSize - 1;
+	  var j = ySize - 1;
+	  while (i >= 0 || j >= 0) {
+	    if (i >= 0 && j >= 0 && Immutable.is(xs.get(i), ys.get(j))) {
+	      diffArray.push(new DiffResult({
+	        op: '=',
+	        val: xs.get(i)
+	      }));
+	      i -= 1;
+	      j -= 1;
+	    }
+	    else if (i >= 0 && j >= 0 && i === j && !Immutable.is(xs.get(i), ys.get(j))) {
+	      diffArray.push(new ReplaceResult({
+	      val: xs.get(i),
+	      newVal: ys.get(i)
+	      }));
+	      i -= 1;
+	      j -= 1;
+	    }
+	    else {
+	      if (j >= 0 && (i === -1 || matrix[i+1][j] >= matrix[i][j+1])) {
+	        diffArray.push(new DiffResult({
+	          op: '+',
+	          val: ys.get(j)
+	        }));
+	        j -= 1;
+	      }
+	      else if (i >= 0 && (j === -1 || matrix[i+1][j] < matrix[i][j+1])){
+	        diffArray.push(new DiffResult({
+	          op: '-',
+	          val: xs.get(i)
+	        }));
+	        i -= 1;
+	      }
+	    }
 	  }
-	  if (i > 0 && j > 0 && (0, _immutable.is)(xs.get(i - 1), ys.get(j - 1))) {
-	    return printDiff(matrix, xs, ys, i - 1, j - 1).concat(new DiffResult({
-	      op: '=',
-	      val: xs.get(i - 1)
-	    }));
-	  } else if (i > 0 && j > 0 && i === j && !(0, _immutable.is)(xs.get(i - 1), ys.get(j - 1))) {
-	    return printDiff(matrix, xs, ys, i - 1, j - 1).concat(new ReplaceResult({
-	      val: xs.get(i - 1),
-	      newVal: ys.get(i - 1)
-	    }));
-	  } else if (j > 0 && (i === 0 || matrix[i][j - 1] >= matrix[i - 1][j])) {
-	    return printDiff(matrix, xs, ys, i, j - 1).concat(new DiffResult({
-	      op: '+',
-	      val: ys.get(j - 1)
-	    }));
-	  } else if (i > 0 && (j === 0 || matrix[i][j - 1] < matrix[i - 1][j])) {
-	    return printDiff(matrix, xs, ys, i - 1, j).concat(new DiffResult({
-	      op: '-',
-	      val: xs.get(i - 1)
-	    }));
-	  }
+	  return diffArray.reverse();
 	};
 	
 	/**
@@ -1240,15 +1263,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param ys Indexed Sequence 2
 	 */
 	function computeLcsMatrix(xs, ys) {
-	  var n = xs.size || 0;
-	  var m = ys.size || 0;
+	  var n = xs.size||0;
+	  var m = ys.size||0;
 	  var a = makeMatrix(n + 1, m + 1, 0);
 	
 	  for (var i = 0; i < n; i++) {
 	    for (var j = 0; j < m; j++) {
-	      if ((0, _immutable.is)(xs.get(i), ys.get(j))) {
+	      if (Immutable.is(xs.get(i), ys.get(j))) {
 	        a[i + 1][j + 1] = a[i][j] + 1;
-	      } else {
+	      }
+	      else {
 	        a[i + 1][j + 1] = Math.max(a[i + 1][j], a[i][j + 1]);
 	      }
 	    }
@@ -1264,21 +1288,66 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param matrix LCS Matrix
 	 * @returns {Array.<T>} Longest Common Subsequence
 	 */
-	function backtrackLcs(xs, ys, matrix) {
+	var backtrackLcs = function(xs, ys, matrix){
 	  var lcs = [];
-	  for (var i = xs.size, j = ys.size; i !== 0 && j !== 0;) {
-	    if (matrix[i][j] === matrix[i - 1][j]) {
-	      i--;
-	    } else if (matrix[i][j] === matrix[i][j - 1]) {
-	      j--;
-	    } else if ((0, _immutable.is)(xs.get(i - 1), ys.get(j - 1))) {
-	      lcs.push(xs.get(i - 1));
-	      i--;
-	      j--;
+	  for(var i = xs.size, j = ys.size; i !== 0 && j !== 0;){
+	    if (matrix[i][j] === matrix[i-1][j]){ i--; }
+	    else if (matrix[i][j] === matrix[i][j-1]){ j--; }
+	    else{
+	      if(Immutable.is(xs.get(i-1), ys.get(j-1))){
+	        lcs.push(xs.get(i-1));
+	        i--;
+	        j--;
+	      }
 	    }
 	  }
 	  return lcs.reverse();
 	};
+	
+	module.exports = {
+	  lcs: lcs,
+	  computeLcsMatrix: computeLcsMatrix,
+	  diff: diff
+	};
+
+
+/***/ },
+/* 17 */
+/***/ function(module, exports) {
+
+	'use strict';
+	
+	var slashRe = new RegExp('/', 'g');
+	var escapedSlashRe = new RegExp('~1', 'g');
+	var tildeRe = /~/g;
+	var escapedTildeRe = /~0/g;
+	
+	var Path = {
+	  escape: function (str) {
+	    if(typeof(str) === 'number'){
+	      return str.toString();
+	    }
+	    if(typeof(str) !== 'string'){
+	      throw 'param str (' + str + ') is not a string';
+	    }
+	
+	    return str.replace(tildeRe, '~0').replace(slashRe, '~1');
+	  },
+	
+	  unescape: function (str) {
+	    if(typeof(str) == 'string') {
+	      return str.replace(escapedSlashRe, '/').replace(escapedTildeRe, '~');
+	    }
+	    else {
+	      return str;
+	    }
+	  },
+	  concat: function(path, key){
+	    return path + '/' + key;
+	  }
+	};
+	
+	module.exports = Path;
 
 /***/ }
 /******/ ])

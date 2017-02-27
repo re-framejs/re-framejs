@@ -1,10 +1,10 @@
-const kind = 'sub';
 import * as  Immutable from 'immutable';
 import {Ratom, makeReaction} from 'reframe/ratom';
 import {registerHandler, getHandler, clearHandlers} from 'reframe/registrar';
 import {appDb} from 'reframe/db';
 import {reagentId} from 'reframe/interop';
 
+export const kind = 'sub';
 
 let queryReaction = new Ratom(Immutable.Map());
 

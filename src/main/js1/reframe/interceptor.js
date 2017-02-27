@@ -15,26 +15,26 @@ export function toInterceptor({id, before, after}) {
 }
 
 // effect helpers
-function getEffect(ctx, key = null, notFound = null) {
+export function getEffect(ctx, key = null, notFound = null) {
     if (key) {
         return ctx.getIn(['effects', key], notFound);
     }
     return ctx.get('effects');
 }
 
-function assocEffect(ctx, key, effect) {
+export function assocEffect(ctx, key, effect) {
     return ctx.setIn(['effects', key], effect);
 }
 
 // coeffect helpers
-function getCoeffect(ctx, key = null, notFound = null) {
+export function getCoeffect(ctx, key = null, notFound = null) {
     if (key) {
         return ctx.getIn(['coeffects', key], notFound);
     }
     return ctx.get('coeffects');
 }
 
-function assocCoffect(ctx, key, coeffect) {
+export function assocCoffect(ctx, key, coeffect) {
     return ctx.setIn(['coeffects', key], coeffect);
 }
 
@@ -74,7 +74,7 @@ function invokeInterceptors(initialCtx, direction) {
     return ctx;
 }
 
-function enqueue(ctx, interceptors) {
+export function enqueue(ctx, interceptors) {
     return ctx.update('queue', Immutable.List(), old => old.concat(Immutable.List(interceptors)))
 }
 

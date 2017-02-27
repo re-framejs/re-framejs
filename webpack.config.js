@@ -37,7 +37,7 @@ module.exports = {
     resolve: {
         root: [
             path.resolve(),
-            path.resolve('src/main/js')
+            path.resolve('src/main/js1')
         ]
     },
     module: {

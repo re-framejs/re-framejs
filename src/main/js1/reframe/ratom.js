@@ -10,30 +10,35 @@ function inContext(obj, f) {
 
 function notifyDerefWatcher(derefed) {
     if (ratomContext) {
-        ratomContext.addWatch(derefed)
+        const ctx = ratomContext;
+        derefed.addWatch(ctx, (oldValue, newValue) => {
+            ctx.markDirty();
+            derefed.removeWatch(ctx);
+        });
     }
 }
 
 function derefCapture(f, r) {
     return inContext(r, f);
 }
+
 class WatchedDisposable {
     constructor() {
         this._watches = new Map();
     }
 
     _notifyWatches(oldValue, newValue) {
-        Object.keys(this._watches).forEach(watch => {
+        this._watches.forEach(watch => {
             watch(oldValue, newValue);
         });
     }
 
     addWatch(key, f) {
-        this._watches[key] = f;
+        this._watches.set(key, f);
     }
 
     removeWatch(key) {
-        delete this._watches[key];
+        this._watches.delete(key);
     }
 }
 
@@ -44,12 +49,15 @@ export class Ratom extends WatchedDisposable {
     }
 
     deref() {
-
+        notifyDerefWatcher(this);
         return this._value;
     }
 
     reset(value) {
+        const oldValue = this._value;
         this._value = value;
+        this._notifyWatches(oldValue, this._value);
+
         return value;
     }
 
@@ -64,7 +72,6 @@ export class Ratom extends WatchedDisposable {
         return this._value;
     }
 
-
 }
 
 class Reaction extends WatchedDisposable {
@@ -76,6 +83,7 @@ class Reaction extends WatchedDisposable {
     }
 
     _run(check) {
+        console.log('run');
         const oldState = this._state;
         this._state = derefCapture(this._f, this);
         this._dirty = false;
@@ -85,8 +93,14 @@ class Reaction extends WatchedDisposable {
         }
     }
 
+    markDirty() {
+        if (!this._dirty) {
+            this._dirty = true;
+        }
+    }
 
     deref() {
+        notifyDerefWatcher(this);
         if (this._dirty) {
             this._run(false);
         }

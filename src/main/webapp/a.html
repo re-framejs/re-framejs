@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.8.1/immutable.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+<script src="js/reframe.js"></script>
+
+<script>
+    var a = reframe.atom(Immutable.Map({a: 1}));
+    var r1 = reframe.reaction(() => a.deref().get('b'));
+    var r2 = reframe.reaction(() => r1.deref());
+
+    console.log('r1', r1.deref());
+    console.log('r2', r2.deref());
+
+    console.log('change');
+    a.swap(old => old.set('b', 2));
+    console.log('r1', r1.deref());
+    console.log('r2', r2.deref());
+
+</script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import * as fx from 'reframe/fx';
 import * as interceptor from 'reframe/interceptor';
 import * as interop from 'reframe/interop';
 import {Ratom, makeReaction} from 'reframe/ratom';
+import * as react from 'reframe/react';
 import * as registrar from 'reframe/registrar';
 import * as router from 'reframe/router';
 import * as stdinterceptors from 'reframe/stdinterceptors';
@@ -18,6 +19,7 @@ export function reaction(f) {
     return makeReaction(f);
 }
 
+export const appDb = db.appDb;
 export const dispatch = router.dispatch;
 export const dispatchSync = router.dispatchSync;
 
@@ -88,7 +90,7 @@ export function regEventDb(id, interceptors, dbHandler) {
         dbHandler = interceptors;
         interceptors = null;
     }
-    return events.register(id, [cofx.injectDb, fx.doFx, interceptors], stdinterceptors.dbHandlerToInterceptor(dbHandler));
+    return events.register(id, [cofx.injectDb, fx.doFx, interceptors, stdinterceptors.dbHandlerToInterceptor(dbHandler)]);
 }
 
 export function regEventFx(id, interceptors, fxHandler) {
@@ -96,7 +98,7 @@ export function regEventFx(id, interceptors, fxHandler) {
         fxHandler = interceptors;
         interceptors = null;
     }
-    return events.register(id, [cofx.injectDb, fx.doFx, interceptors], stdinterceptors.fxHandlerToInterceptor(fxHandler));
+    return events.register(id, [cofx.injectDb, fx.doFx, interceptors, stdinterceptors.fxHandlerToInterceptor(fxHandler)]);
 }
 
 export function regEventCtx(id, interceptors, ctxHandler) {
@@ -104,6 +106,12 @@ export function regEventCtx(id, interceptors, ctxHandler) {
         ctxHandler = interceptors;
         interceptors = null;
     }
-    return events.register(id, [cofx.injectDb, fx.doFx, interceptors], stdinterceptors.ctxHandlerToInterceptor(ctxHandler));
+    return events.register(id, [cofx.injectDb, fx.doFx, interceptors, stdinterceptors.ctxHandlerToInterceptor(ctxHandler)]);
 }
 
+// react
+export const viewP = react.viewP;
+export const viewV = react.viewV;
+export const viewSP = react.viewSP;
+export const viewSV = react.viewSV;
+export const view = react.viewSV;

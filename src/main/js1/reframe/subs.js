@@ -51,7 +51,7 @@ function cacheLookup(query, dynv = Immutable.List()) {
 }
 
 export function subscribe(query, dynv = undefined) {
-    if (typeof dynv !== 'undefined') {
+    if (typeof dynv === 'undefined') {
 
         const cached = cacheLookup(query);
         if (cached) {
@@ -93,10 +93,10 @@ function derefInputSignals(signals, queryId) {
     if (Array.isArray(signals)) {
         return signals.map(v => v.deref());
     }
-    else if (Immutable.isMap(signals)) {
+    else if (Immutable.Map.isMap(signals)) {
         return signals.map(v => v.deref());
     }
-    else if (Immutable.isSeq(signals)) {
+    else if (Immutable.Seq.isSeq(signals)) {
         return signals.map(v => v.deref());
     }
     else if (signals && signals.deref) {
@@ -153,17 +153,23 @@ export function regSub(queryId, ...args) {
     const
         computationFn = args[args.length - 1],
         inputArgs = args.slice(0, args.length - 1),
-        errHeader = "re-frame: reg-sub for " + query - id + ", ",
+        errHeader = "re-frame: reg-sub for " + queryId + ", ",
         inputsFn = makeInputsFn(inputArgs);
 
     registerHandler(kind, queryId, function subsHandlerFn(db, queryVec, dynVec = undefined) {
         if (typeof  dynVec === 'undefined') {
-
-        } else {
             const
                 subscriptions = inputsFn(queryVec),
                 reactionId = new Ratom(null),
                 reaction = makeReaction(() => computationFn(derefInputSignals(subscriptions, queryId), queryVec));
+
+            reactionId.reset(reagentId(reaction));
+            return reaction;
+        } else {
+            const
+                subscriptions = inputsFn(queryVec, dynVec),
+                reactionId = new Ratom(null),
+                reaction = makeReaction(() => computationFn(derefInputSignals(subscriptions, queryId), queryVec, dynVec));
 
             reactionId.reset(reagentId(reaction));
             return reaction;

@@ -62,15 +62,16 @@ function invokeInterceptors(initialCtx, direction) {
         } else {
             const
                 interceptor = queue.first(),
-                stack = ctx.get('stack');
+                stack = ctx.get('stack', Immutable.List());
 
             ctx = invokeInterceptorFn(
-                ctx.set('queue', queue.shift())
-                    .set('stack', stack.push(interceptor)),
+                ctx
+                    .set('queue', queue.shift())
+                    .set('stack', stack.unshift(interceptor)),
                 interceptor, direction
             );
         }
-    } while (!ctx.get('queue').isEmpty());
+    } while (ctx && !ctx.get('queue').isEmpty());
     return ctx;
 }
 
@@ -97,6 +98,6 @@ export function execute(event, interceptors) {
     let ctx = context(event, interceptors);
     ctx = invokeInterceptors(ctx, "before");
     ctx = changeDirection(ctx);
-    ctx = interceptors(ctx, "after");
+    ctx = invokeInterceptors(ctx, "after");
     return ctx;
 }

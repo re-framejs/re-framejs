@@ -8,6 +8,7 @@
 <div id="app"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.8.1/immutable.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
 <script src="js/reframe.js"></script>
 
 <script>
@@ -22,6 +23,21 @@
     a.swap(old => old.set('b', 2));
     console.log('r1', r1.deref());
     console.log('r2', r2.deref());
+
+    const App = reframe.view('App', function () {
+        return React.DOM.div({}, 'App', reframe.subscribe(['value']).deref());
+    });
+
+    reframe.regEventDb('initialize', [reframe.debug], (db) => {
+        return db.setIn(['value'], 'value');
+    });
+    reframe.regEventDb('change-value', [reframe.debug, reframe.trimv], (db, [value]) => {
+        return db.setIn(['value'], value);
+    })
+    reframe.regSub('value', (db) => db.get('value'));
+    reframe.dispatchSync(['initialize']);
+
+    ReactDOM.render(App(), document.querySelector('#app'))
 
 </script>
 </body>

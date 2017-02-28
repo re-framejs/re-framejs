@@ -7,13 +7,13 @@ const laterFns = {
     'yield': nextTick
 };
 
-function trigger(state, trigger, arg) {
+function doTrigger(fsm, state, trigger, arg) {
     /**
      * if you are in state ":idle" and a trigger ":add-event"
      * happens, then move the FSM to state ":scheduled" and execute
      * that two-part "do" function.
      */
-    if (state === 'iddle' && trigger === 'add-event') {
+    if (state === 'idle' && trigger === 'add-event') {
         return ['scheduled', (fsm) => {
             fsm._addEvent(arg);
             fsm._runNextTick();
@@ -76,7 +76,7 @@ function trigger(state, trigger, arg) {
 class Fsm {
     constructor() {
         this._postEventCallbacks = {};
-        this._state = null;
+        this._state = 'idle';
         this._queue = [];
     }
 
@@ -95,7 +95,7 @@ class Fsm {
     }
 
     trigger(trigger, arg) {
-        const [newState, actionFn] = trigger(this._state, trigger, arg);
+        const [newState, actionFn] = doTrigger(this, this._state, trigger, arg);
 
         this._state = newState;
         if (actionFn) {

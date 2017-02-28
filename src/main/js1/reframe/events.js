@@ -5,7 +5,14 @@ import * as interceptor from 'reframe/interceptor';
 const kind = 'event';
 
 function flattenAndRemoveNulls(id, interceptors) {
-    return Immutable.fromJS(interceptors).flatten(0).filter(Boolean).toList();
+    return Immutable.fromJS(interceptors).flatMap(interceptor => {
+        if (Immutable.Map.isMap(interceptor)) {
+            return Immutable.List([interceptor]);
+        } else if (interceptor) {
+            return flattenAndRemoveNulls(id, interceptor);
+        }
+        return Immutable.List();
+    }).filter(Boolean).toList();
 }
 
 
@@ -24,7 +31,7 @@ export function handle(event) {
     } else {
         try {
             handling = event;
-            interceptor.execute(event, interceptors);
+            return interceptor.execute(event, interceptors);
         } finally {
             handling = null;
         }

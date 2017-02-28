@@ -11,7 +11,7 @@ function register(id, handlerFn) {
     return registerHandler(kind, id, handlerFn);
 }
 
-const doFx = toInterceptor({
+export const doFx = toInterceptor({
     id: 'do-fx',
     after: function doFxAfter(ctx) {
         ctx.get('effects').forEach((value, effect) => {

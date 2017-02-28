@@ -1,110 +1,130 @@
-let ratomContext = null;
-function inContext(obj, f) {
+const ratomCtx = [];
+let id = 1;
+function runInCtx(obj, f) {
     try {
-        ratomContext = obj;
+        ratomCtx.push(obj);
         return f();
     } finally {
-        ratomContext = null;
+        ratomCtx.pop();
     }
 }
 
-function notifyDerefWatcher(derefed) {
-    if (ratomContext) {
-        const ctx = ratomContext;
-        derefed.addWatch(ctx, (oldValue, newValue) => {
-            ctx.markDirty();
-            derefed.removeWatch(ctx);
-        });
+function watchInCtx(obj) {
+    const ctx = ratomCtx[ratomCtx.length - 1];
+    if (typeof ctx !== 'undefined') {
+        obj.addWatch(ctx);
     }
 }
 
-function derefCapture(f, r) {
-    return inContext(r, f);
-}
-
-class WatchedDisposable {
+class Watchable {
     constructor() {
-        this._watches = new Map();
+        this._watches = new Set();
+        this._watching = new Set();
     }
 
-    _notifyWatches(oldValue, newValue) {
-        this._watches.forEach(watch => {
-            watch(oldValue, newValue);
+    addWatch(obj) {
+        this._watches.add(obj);
+        obj.watching(this);
+    }
+
+    watching(obj) {
+        this._watching.add(obj);
+    }
+
+    dispaseWatches() {
+        this._watching.forEach(watch => {
+            watch.removeWatch(this);
         });
+        this._watches.clear();
     }
 
-    addWatch(key, f) {
-        this._watches.set(key, f);
+    removeWatch(obj) {
+        this._watches.delete(obj);
     }
 
-    removeWatch(key) {
-        this._watches.delete(key);
+    notifyWatches(dispose) {
+        this._watches.forEach(watch => watch.notify(dispose));
     }
 }
 
-export class Ratom extends WatchedDisposable {
+export class Ratom extends Watchable {
     constructor(value) {
         super();
         this._value = value;
-    }
-
-    deref() {
-        notifyDerefWatcher(this);
-        return this._value;
+        this._id = id++;
     }
 
     reset(value) {
-        const oldValue = this._value;
         this._value = value;
-        this._notifyWatches(oldValue, this._value);
-
-        return value;
-    }
-
-    swap(fn, ...args) {
-        const oldValue = this._value;
-        this._value = fn(oldValue, ...args);
-
-        if (oldValue !== this._value) {
-            this._notifyWatches(oldValue, this._value);
-        }
-
+        this.notifyWatches(false);
         return this._value;
     }
 
+    swap(f, ...args) {
+        this._value = f(this._value, args);
+        this.notifyWatches(false);
+        return this._value;
+    }
+
+    deref() {
+        watchInCtx(this);
+        return this._value;
+    }
+
+    map(f) {
+        return makeReaction(() => f(this.deref()));
+    }
 }
 
-class Reaction extends WatchedDisposable {
+class Reaction extends Watchable {
     constructor(f) {
         super();
         this._f = f;
         this._dirty = true;
-        this._state = undefined;
+        this._id = id++;
+        this._disposed = false;
     }
 
-    _run(check) {
-        console.log('run');
-        const oldState = this._state;
-        this._state = derefCapture(this._f, this);
+    _run() {
+        this._state = runInCtx(this, this._f);
         this._dirty = false;
-
-        if (oldState !== this._state) {
-            this._notifyWatches(oldState, this._state);
-        }
-    }
-
-    markDirty() {
-        if (!this._dirty) {
-            this._dirty = true;
-        }
     }
 
     deref() {
-        notifyDerefWatcher(this);
-        if (this._dirty) {
-            this._run(false);
+        if (this._disposed) {
+            throw new Error('Reaction already disposed');
         }
-        return this._f();
+        watchInCtx(this);
+        if (this._dirty) {
+            this._run();
+        }
+        return this._state;
+    }
+
+    notify(dispose) {
+        if (dispose) {
+            this._dirty = true;
+            this._disposed = true;
+            this.notifyWatches(true);
+        } else {
+            this._dirty = true;
+            const oldState = this._state;
+            this._run();
+            if (oldState !== this._state) {
+                this.notifyWatches(false);
+            }
+        }
+    }
+
+    dispose() {
+        this._disposed = true;
+        this.notifyWatches(true);
+        this.dispaseWatches();
+        this._dirty = true;
+    }
+
+    map(f) {
+        return makeReaction(() => f(this.deref()));
     }
 }
 

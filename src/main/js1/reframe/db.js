@@ -1,4 +1,4 @@
 import * as Immutable from 'immutable';
-import {makeAtom} from 'reframe/ratom';
+import {makeRatom} from 'reframe/ratom';
 
-export const appDb = makeAtom(Immutable.Map());
+export const appDb = makeRatom(Immutable.Map());

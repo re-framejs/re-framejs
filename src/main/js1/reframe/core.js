@@ -4,7 +4,7 @@ import * as events from 'reframe/events';
 import * as fx from 'reframe/fx';
 import * as interceptor from 'reframe/interceptor';
 import * as interop from 'reframe/interop';
-import {makeAtom, makeReaction} from 'reframe/ratom';
+import {makeRatom, makeReaction} from 'reframe/ratom';
 import * as react from 'reframe/react';
 import * as registrar from 'reframe/registrar';
 import * as router from 'reframe/router';
@@ -12,7 +12,7 @@ import * as stdinterceptors from 'reframe/stdinterceptors';
 import * as subs from 'reframe/subs';
 
 export function atom(value) {
-    return makeAtom(value);
+    return makeRatom(value);
 }
 
 export function reaction(f) {

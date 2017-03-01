@@ -27,8 +27,13 @@
     console.log('r2', r2.deref());
     console.log('r3', r3.deref());
 
+    const Component = reframe.view('Component', function (rvalue) {
+        return React.DOM.div({}, 'Component ', rvalue.deref());
+    });
+
     const App = reframe.view('App', function () {
-        return React.DOM.div({}, 'App', reframe.subscribe(['value']).deref());
+        const value = reframe.subscribe(['value']);
+        return React.DOM.div({}, 'App ', value.deref(), Component(value));
     });
 
     reframe.regEventDb('initialize', [reframe.debug], (db) => {
@@ -36,7 +41,7 @@
     });
     reframe.regEventDb('change-value', [reframe.debug, reframe.trimv], (db, [value]) => {
         return db.setIn(['value'], value);
-    })
+    });
     reframe.regSub('value', (db) => db.get('value'));
     reframe.dispatchSync(['initialize']);
 

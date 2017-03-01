@@ -8,9 +8,10 @@ export function nextTick(f) {
 }
 
 function runQueue(components) {
-    components.sort((o1, o2) => o1.state.renderOrder - o2.state.renderOrder);
+    const s = [...new Set(components)];
+    s.sort((o1, o2) => o1.state.renderOrder - o2.state.renderOrder);
 
-    components.forEach((component) => component.tryForceUpdate());
+    s.forEach((component) => component.tryForceUpdate());
 }
 class RenderQueue {
     constructor() {
@@ -18,7 +19,7 @@ class RenderQueue {
     }
 
     enqueue(k, f) {
-        if (!this._k) {
+        if (!this[k]) {
             this[k] = [];
         }
         this[k].push(f);

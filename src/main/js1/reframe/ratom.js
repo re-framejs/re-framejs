@@ -68,58 +68,7 @@ class Observable {
     }
 }
 
-class Watchable {
-    constructor() {
-        this._watches = new Set();
-        this._watching = new Set();
-        this._disposed = false;
-        this._onDispose = [];
-    }
-
-    addWatch(obj) {
-        this._watches.add(obj);
-        obj.watching(this);
-    }
-
-    watching(obj) {
-        this._watching.add(obj);
-    }
-
-    dispaseWatches() {
-        this._watching.forEach(watch => {
-            watch.removeWatch(this);
-        });
-        this._watches.clear();
-    }
-
-    removeWatch(obj) {
-        this._watches.delete(obj);
-    }
-
-    notifyWatches(dispose) {
-        this._watches.forEach(watch => watch.notify(dispose));
-    }
-
-    dispose() {
-        this._disposed = true;
-        this.notifyWatches(true);
-        this.dispaseWatches();
-        this._dirty = true;
-
-        this._onDispose.forEach(f => f());
-    }
-
-    disposeInternal() {
-        this._disposed = true;
-        this.notifyWatches(true);
-    }
-
-    addOnDispose(f) {
-        this._onDispose.push(f);
-    }
-}
-
-class Ratom extends Observable {
+class Atom extends Observable {
     constructor(value) {
         super();
         this._value = value;
@@ -143,7 +92,6 @@ class Ratom extends Observable {
     }
 
     deref() {
-        watchInCtx(this);
         this._changed = false;
         return this._value;
     }
@@ -157,7 +105,18 @@ class Ratom extends Observable {
     }
 
     id() {
-        return 'ra-' + this._id;
+        return 'a-' + this._id;
+    }
+}
+
+class Ratom extends Atom {
+    constructor(value) {
+        super(value);
+    }
+
+    deref() {
+        watchInCtx(this);
+        return super.deref();
     }
 }
 
@@ -217,5 +176,9 @@ export function makeReaction(f) {
 }
 
 export function makeAtom(value) {
+    return new Atom(value);
+}
+
+export function makeRatom(value) {
     return new Ratom(value);
 }

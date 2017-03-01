@@ -32,6 +32,7 @@ export function reaction(f) {
 }
 
 export const appDb = db.appDb;
+export const db$ = db.appDb.subject();
 export const dispatch = router.dispatch;
 export const dispatchSync = router.dispatchSync;
 
@@ -128,3 +129,18 @@ export const viewV = react.viewV;
 export const viewSP = react.viewSP;
 export const viewSV = react.viewSV;
 export const view = react.viewSV;
+
+// deprecated
+import {Index} from 'reframe/subindex.js';
+let index = new Index(()=>appDb.subject());
+export function indexPath(path, def) {
+    return index.sub(path, def);
+}
+
+export function registerSub(name, handler) {
+    return subs.regSub(name, handler);
+}
+
+export function registerHandler(id, interceptors, handler) {
+    return regEventDb(id, interceptors, handler);
+}

@@ -145,7 +145,11 @@ export let SubscriptionMixin = {
     },
     traceReact(message) {
         if (isTraceReact()) {
-            console.debug(message, this.getDisplayName(), this.props, this.state);
+            console.debug(message, this.getDisplayName(), {
+                order: this.state.renderOrder,
+                render: this.state.renderCycle,
+                props: this.props, state: this.state
+            });
         }
     }
 };

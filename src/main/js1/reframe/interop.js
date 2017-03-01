@@ -14,12 +14,12 @@ export function reagentId(value) {
 
 export const log = ratom.makeAtom(Immutable.Map({
     debug: false,
-    traceReact: true,
-    traceSub: true,
+    traceReact: false,
+    traceSub: false,
 }));
 
 function isEnabled(value) {
-    return log.deref().get('debug');
+    return log.deref().get(value);
 }
 export function isDebug() {
     return isEnabled('debug');

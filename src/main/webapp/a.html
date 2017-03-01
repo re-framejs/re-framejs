@@ -6,6 +6,8 @@
 </head>
 <body>
 <div id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/4.1.0/rx.all.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.8.1/immutable.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
@@ -27,13 +29,14 @@
     console.log('r2', r2.deref());
     console.log('r3', r3.deref());
 
-    const Component = reframe.view('Component', function (rvalue) {
-        return React.DOM.div({}, 'Component ', rvalue.deref());
+    const Component = reframe.view('Component', function (rvalue, dep) {
+        return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep));
     });
 
     const App = reframe.view('App', function () {
         const value = reframe.subscribe(['value']);
-        return React.DOM.div({}, 'App ', value.deref(), Component(value));
+        const dep = reframe.subscribe(['value-deprecated']);
+        return React.DOM.div({}, 'App ', value.deref(), ' ', this.derefSub(['value-deprecated']), Component(value, dep));
     });
 
     const debug = reframe.when(reframe.isDebug, reframe.debug);
@@ -43,7 +46,11 @@
     reframe.regEventDb('change-value', [debug, reframe.trimv], (db, [value]) => {
         return db.setIn(['value'], value);
     });
+    reframe.registerHandler('change-value-deprecated', [debug, reframe.trimv], (db, [value]) => {
+        return db.setIn(['value'], value);
+    });
     reframe.regSub('value', (db) => db.get('value'));
+    reframe.registerSub('value-deprecated', (db) => db.get('value'));
     reframe.dispatchSync(['initialize']);
 
     ReactDOM.render(App(), document.querySelector('#app'))

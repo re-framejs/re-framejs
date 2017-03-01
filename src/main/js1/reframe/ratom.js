@@ -1,3 +1,6 @@
+import * as Rx from 'rx';
+export const db$ = new Rx.BehaviorSubject(Immutable.Map());
+
 const ratomCtx = [];
 let id = 1;
 export function runInCtx(obj, f) {
@@ -35,7 +38,6 @@ class Observable {
         if (observer.unobserve) {
             observer.unobserve(this);
         }
-        console.log('unsubscribe', observer.id(), 'from', this.id());
         if (this._observers.size === 0) {
             this.dispose();
         }
@@ -60,7 +62,6 @@ class Observable {
     }
 
     dispose() {
-        console.log('dispose', this.id(), this._observers);
         if (this._observers.size === 0) {
             this._observables.forEach(observable => observable.unsubscribe(this));
             this._onDispose.forEach(f => f());
@@ -74,12 +75,22 @@ class Atom extends Observable {
         this._value = value;
         this._id = id++;
         this._changed = true;
+        this._subject = new Rx.BehaviorSubject(value);
+    }
+
+    subject() {
+        return this._subject;
+    }
+
+    _valueChanged() {
+        this._subject.onNext(this._value);
+        this._notifyObservers();
     }
 
     reset(value) {
         this._changed = this._value !== value;
         this._value = value;
-        this._notifyObservers();
+        this._valueChanged();
         return this._value;
     }
 
@@ -87,7 +98,7 @@ class Atom extends Observable {
         const oldValue = this._value;
         this._value = f(this._value, args);
         this._changed = this._value !== oldValue;
-        this._notifyObservers();
+        this._valueChanged();
         return this._value;
     }
 

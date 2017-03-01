@@ -5,6 +5,7 @@ import * as React from 'react';
 import {shouldUpdate} from 'reframe/shouldupdate';
 import * as ratom from 'reframe/ratom';
 import * as batching from 'reframe/batching';
+import {isDebug, isTraceReact} from 'reframe/interop';
 
 // export const pause$ = new Rx.BehaviorSubject(true);
 
@@ -71,6 +72,7 @@ class MyDeref {
     dispose() {
         this._watch.dispose();
     }
+
     shouldUpdate() {
         return this._watch.isChanged();
     }
@@ -93,17 +95,19 @@ export let SubscriptionMixin = {
             renderCycle: 0
         };
     },
-    observe: function(watch) {
+    observe: function (watch) {
         this.state.watching.add(new MyDeref(this.state.renderCycle, watch));
     },
     // unobserve: function(observable) {
     //     this.state.watching.delete(observable);
     // },
-    notify: function(dispose) {
+    notify: function (dispose) {
+        this.traceReact('Notify');
         batching.queueRender(this);
     },
-    tryForceUpdate: function() {
+    tryForceUpdate: function () {
         if (shouldUpdateByDerefed(this.state.watching)) {
+            this.traceReact('Force update');
             // console.log('Force update', obj.getDisplayName());
             this.forceUpdate();
         }
@@ -138,6 +142,11 @@ export let SubscriptionMixin = {
     },
     componentWillUnmount: function () {
         this.unsubscribe();
+    },
+    traceReact(message) {
+        if (isTraceReact()) {
+            console.debug(message, this.getDisplayName(), this.props, this.state);
+        }
     }
 };
 
@@ -179,6 +188,7 @@ function propsView(mixin, args) {
     let componentObj = createComponentObj(mixin, args);
     let oldRender = componentObj.render;
     componentObj.render = function () {
+        this.traceReact('Render');
         return ratom.runInCtx(this, () => oldRender.call(this, this.props));
     };
 
@@ -193,6 +203,7 @@ function vectorView(mixin, args) {
     let componentObj = createComponentObj(mixin, args);
     let oldRender = componentObj.render;
     componentObj.render = function () {
+        this.traceReact('Render');
         return ratom.runInCtx(this, () => oldRender.apply(this, this.props.argv));
     };
     let component = React.createClass(componentObj);

@@ -1,6 +1,5 @@
-import {toInterceptor, getEffect, getCoeffect, assocEffect, assocCoeffect} from 'reframe/interceptor';
+import {toInterceptor, getEffect, getCoeffect, assocEffect, assocCoeffect, nextInterceptor} from 'reframe/interceptor';
 import immutablediff from 'immutablediff';
-
 
 export const debug = toInterceptor({
     id: 'debug',
@@ -263,4 +262,16 @@ export function onChanges(f, outPath, ...inPaths) {
             return ctx;
         }
     });
+}
+
+export function when(booleanProvider, interceptor) {
+    return toInterceptor({
+        id: 'when',
+        before: function whenBefore(ctx) {
+            if (booleanProvider()) {
+                return nextInterceptor(ctx, interceptor);
+            }
+            return ctx;
+        }
+    })
 }

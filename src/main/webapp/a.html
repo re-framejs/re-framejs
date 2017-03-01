@@ -36,10 +36,11 @@
         return React.DOM.div({}, 'App ', value.deref(), Component(value));
     });
 
-    reframe.regEventDb('initialize', [reframe.debug], (db) => {
+    const debug = reframe.when(reframe.isDebug, reframe.debug);
+    reframe.regEventDb('initialize', [debug], (db) => {
         return db.setIn(['value'], 'value');
     });
-    reframe.regEventDb('change-value', [reframe.debug, reframe.trimv], (db, [value]) => {
+    reframe.regEventDb('change-value', [debug, reframe.trimv], (db, [value]) => {
         return db.setIn(['value'], value);
     });
     reframe.regSub('value', (db) => db.get('value'));

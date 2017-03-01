@@ -79,6 +79,10 @@ export function enqueue(ctx, interceptors) {
     return ctx.update('queue', Immutable.List(), old => old.concat(Immutable.List(interceptors)))
 }
 
+export function nextInterceptor(ctx, interceptor) {
+    return ctx.update('queue', Immutable.List(), queue => queue.unshift(interceptor));
+}
+
 function context(event, interceptors, db = undefined) {
     let ctx = Immutable.Map();
     ctx = assocCoffect(ctx, 'event', event);

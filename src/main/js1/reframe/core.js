@@ -11,6 +11,18 @@ import * as router from 'reframe/router';
 import * as stdinterceptors from 'reframe/stdinterceptors';
 import * as subs from 'reframe/subs';
 
+export function toggleDebug(value = undefined) {
+    interop.toggleLog('debug', value);
+}
+
+export function toggleReactDebug(value = undefined) {
+    interop.toggleLog('traceReact', value);
+}
+
+export function isDebug() {
+    return interop.isDebug();
+}
+
 export function atom(value) {
     return makeRatom(value);
 }
@@ -30,6 +42,7 @@ export const getEffect = interceptor.getEffect;
 export const assocEffect = interceptor.assocEffect;
 export const assocCoeffect = interceptor.assocCoeffect;
 
+export const when = stdinterceptors.when;
 export const debug = stdinterceptors.debug;
 export const path = stdinterceptors.path;
 export const enrich = stdinterceptors.enrich;

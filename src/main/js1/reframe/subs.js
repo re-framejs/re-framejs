@@ -1,12 +1,12 @@
 import * as  Immutable from 'immutable';
-import {Ratom, makeReaction} from 'reframe/ratom';
+import {makeAtom, makeReaction} from 'reframe/ratom';
 import {registerHandler, getHandler, clearHandlers} from 'reframe/registrar';
 import {appDb} from 'reframe/db';
 import {reagentId} from 'reframe/interop';
 
 export const kind = 'sub';
 
-let queryReaction = new Ratom(Immutable.Map());
+let queryReaction = makeAtom(Immutable.Map());
 
 /**
  * Runs on-dispose for all subscriptions we have in the subscription cache.
@@ -160,18 +160,14 @@ export function regSub(queryId, ...args) {
         if (typeof  dynVec === 'undefined') {
             const
                 subscriptions = inputsFn(queryVec),
-                reactionId = new Ratom(null),
                 reaction = makeReaction(() => computationFn(derefInputSignals(subscriptions, queryId), queryVec));
 
-            reactionId.reset(reagentId(reaction));
             return reaction;
         } else {
             const
                 subscriptions = inputsFn(queryVec, dynVec),
-                reactionId = new Ratom(null),
                 reaction = makeReaction(() => computationFn(derefInputSignals(subscriptions, queryId), queryVec, dynVec));
 
-            reactionId.reset(reagentId(reaction));
             return reaction;
         }
     });

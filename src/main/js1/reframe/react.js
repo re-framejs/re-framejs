@@ -93,9 +93,12 @@ export let SubscriptionMixin = {
             renderCycle: 0
         };
     },
-    watching: function(watch) {
+    observe: function(watch) {
         this.state.watching.add(new MyDeref(this.state.renderCycle, watch));
     },
+    // unobserve: function(observable) {
+    //     this.state.watching.delete(observable);
+    // },
     notify: function(dispose) {
         batching.queueRender(this);
     },
@@ -128,7 +131,7 @@ export let SubscriptionMixin = {
     componentDidUpdate: function () {
         for (let watch of this.state.watching) {
             if (watch.shouldDispose(this.state.renderCycle)) {
-                watch.dispose();
+                // watch.dispose();
                 this.state.watching.delete(watch);
             }
         }

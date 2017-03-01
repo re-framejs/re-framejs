@@ -1,13 +1,13 @@
 (function webpackUniversalModuleDefinition(root, factory) {
 	if(typeof exports === 'object' && typeof module === 'object')
-		module.exports = factory(require("immutable"), require("react"));
+		module.exports = factory(require("immutable"), require("rx"), require("react"));
 	else if(typeof define === 'function' && define.amd)
-		define("reframe", ["immutable", "react"], factory);
+		define("reframe", ["immutable", "rx", "react"], factory);
 	else if(typeof exports === 'object')
-		exports["reframe"] = factory(require("immutable"), require("react"));
+		exports["reframe"] = factory(require("immutable"), require("rx"), require("react"));
 	else
-		root["reframe"] = factory(root["Immutable"], root["React"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_3__, __WEBPACK_EXTERNAL_MODULE_14__) {
+		root["reframe"] = factory(root["Immutable"], root["Rx"], root["React"]);
+})(this, function(__WEBPACK_EXTERNAL_MODULE_3__, __WEBPACK_EXTERNAL_MODULE_7__, __WEBPACK_EXTERNAL_MODULE_15__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -59,7 +59,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.appDb = undefined;
+	exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
+	exports.toggleDebug = toggleDebug;
+	exports.toggleReactDebug = toggleReactDebug;
+	exports.isDebug = isDebug;
 	exports.atom = atom;
 	exports.reaction = reaction;
 	exports.regSubRaw = regSubRaw;
@@ -70,6 +73,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.regEventDb = regEventDb;
 	exports.regEventFx = regEventFx;
 	exports.regEventCtx = regEventCtx;
+	exports.indexPath = indexPath;
+	exports.registerSub = registerSub;
+	exports.registerHandler = registerHandler;
 	
 	var _cofx = __webpack_require__(1);
 	
@@ -79,11 +85,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var db = _interopRequireWildcard(_db);
 	
-	var _events = __webpack_require__(7);
+	var _events = __webpack_require__(8);
 	
 	var events = _interopRequireWildcard(_events);
 	
-	var _fx = __webpack_require__(8);
+	var _fx = __webpack_require__(9);
 	
 	var fx = _interopRequireWildcard(_fx);
 	
@@ -91,13 +97,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var interceptor = _interopRequireWildcard(_interceptor);
 	
-	var _interop = __webpack_require__(10);
+	var _interop = __webpack_require__(11);
 	
 	var interop = _interopRequireWildcard(_interop);
 	
 	var _ratom = __webpack_require__(6);
 	
-	var _react = __webpack_require__(12);
+	var _react = __webpack_require__(13);
 	
 	var react = _interopRequireWildcard(_react);
 	
@@ -105,22 +111,40 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var registrar = _interopRequireWildcard(_registrar);
 	
-	var _router = __webpack_require__(9);
+	var _router = __webpack_require__(10);
 	
 	var router = _interopRequireWildcard(_router);
 	
-	var _stdinterceptors = __webpack_require__(17);
+	var _stdinterceptors = __webpack_require__(18);
 	
 	var stdinterceptors = _interopRequireWildcard(_stdinterceptors);
 	
-	var _subs = __webpack_require__(13);
+	var _subs = __webpack_require__(14);
 	
 	var subs = _interopRequireWildcard(_subs);
 	
+	var _subindex = __webpack_require__(23);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
+	function toggleDebug() {
+	    var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+	
+	    interop.toggleLog('debug', value);
+	}
+	
+	function toggleReactDebug() {
+	    var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
+	
+	    interop.toggleLog('traceReact', value);
+	}
+	
+	function isDebug() {
+	    return interop.isDebug();
+	}
+	
 	function atom(value) {
-	    return new _ratom.Ratom(value);
+	    return (0, _ratom.makeRatom)(value);
 	}
 	
 	function reaction(f) {
@@ -128,6 +152,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	var appDb = exports.appDb = db.appDb;
+	var db$ = exports.db$ = db.appDb.subject();
 	var dispatch = exports.dispatch = router.dispatch;
 	var dispatchSync = exports.dispatchSync = router.dispatchSync;
 	
@@ -138,6 +163,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var assocEffect = exports.assocEffect = interceptor.assocEffect;
 	var assocCoeffect = exports.assocCoeffect = interceptor.assocCoeffect;
 	
+	var when = exports.when = stdinterceptors.when;
 	var debug = exports.debug = stdinterceptors.debug;
 	var path = exports.path = stdinterceptors.path;
 	var enrich = exports.enrich = stdinterceptors.enrich;
@@ -222,6 +248,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	var viewSP = exports.viewSP = react.viewSP;
 	var viewSV = exports.viewSV = react.viewSV;
 	var view = exports.view = react.viewSV;
+	
+	// deprecated
+	
+	var index = new _subindex.Index(function () {
+	    return appDb.subject();
+	});
+	function indexPath(path, def) {
+	    return index.sub(path, def);
+	}
+	
+	function registerSub(name, handler) {
+	    return subs.regSub(name, handler);
+	}
+	
+	function registerHandler(id, interceptors, handler) {
+	    return regEventDb(id, interceptors, handler);
+	}
 
 /***/ },
 /* 1 */
@@ -349,6 +392,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.getCoeffect = getCoeffect;
 	exports.assocCoffect = assocCoffect;
 	exports.enqueue = enqueue;
+	exports.nextInterceptor = nextInterceptor;
 	exports.execute = execute;
 	
 	var _immutable = __webpack_require__(3);
@@ -448,6 +492,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	}
 	
+	function nextInterceptor(ctx, interceptor) {
+	    return ctx.update('queue', Immutable.List(), function (queue) {
+	        return queue.unshift(interceptor);
+	    });
+	}
+	
 	function context(event, interceptors) {
 	    var db = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 	
@@ -492,28 +542,41 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
-	var appDb = exports.appDb = new _ratom.Ratom(Immutable.Map());
+	var appDb = exports.appDb = (0, _ratom.makeRatom)(Immutable.Map());
 
 /***/ },
 /* 6 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
+	exports.db$ = undefined;
+	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
 	exports.runInCtx = runInCtx;
 	exports.makeReaction = makeReaction;
+	exports.makeAtom = makeAtom;
+	exports.makeRatom = makeRatom;
+	
+	var _rx = __webpack_require__(7);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 	
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var db$ = exports.db$ = new Rx.BehaviorSubject(Immutable.Map());
 	
 	var ratomCtx = [];
 	var id = 1;
@@ -527,103 +590,113 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function watchInCtx(obj) {
-	    var ctx = ratomCtx[ratomCtx.length - 1];
-	    if (typeof ctx !== 'undefined') {
-	        obj.addWatch(ctx);
+	    var observer = ratomCtx[ratomCtx.length - 1];
+	    if (typeof observer !== 'undefined') {
+	        obj.subscribe(observer);
 	    }
 	}
 	
-	var Watchable = function () {
-	    function Watchable() {
-	        _classCallCheck(this, Watchable);
+	var Observable = function () {
+	    function Observable() {
+	        _classCallCheck(this, Observable);
 	
-	        this._watches = new Set();
-	        this._watching = new Set();
-	        this._disposed = false;
-	        this._onDispose = [];
+	        this._observers = new Set();
+	        this._observables = new Set();
+	        this._onDispose = new Set();
 	    }
 	
-	    _createClass(Watchable, [{
-	        key: 'addWatch',
-	        value: function addWatch(obj) {
-	            this._watches.add(obj);
-	            obj.watching(this);
+	    _createClass(Observable, [{
+	        key: 'subscribe',
+	        value: function subscribe(observer) {
+	            this._observers.add(observer);
+	            if (observer.observe) {
+	                observer.observe(this);
+	            }
 	        }
 	    }, {
-	        key: 'watching',
-	        value: function watching(obj) {
-	            this._watching.add(obj);
+	        key: 'unsubscribe',
+	        value: function unsubscribe(observer) {
+	            this._observers.delete(observer);
+	            if (observer.unobserve) {
+	                observer.unobserve(this);
+	            }
+	            if (this._observers.size === 0) {
+	                this.dispose();
+	            }
 	        }
 	    }, {
-	        key: 'dispaseWatches',
-	        value: function dispaseWatches() {
-	            var _this = this;
-	
-	            this._watching.forEach(function (watch) {
-	                watch.removeWatch(_this);
+	        key: 'observe',
+	        value: function observe(observable) {
+	            this._observables.add(observable);
+	        }
+	    }, {
+	        key: 'unobserve',
+	        value: function unobserve(observable) {
+	            this._observables.delete(observable);
+	        }
+	    }, {
+	        key: '_notifyObservers',
+	        value: function _notifyObservers() {
+	            this._observers.forEach(function (observer) {
+	                observer.notify();
 	            });
-	            this._watches.clear();
-	        }
-	    }, {
-	        key: 'removeWatch',
-	        value: function removeWatch(obj) {
-	            this._watches.delete(obj);
-	        }
-	    }, {
-	        key: 'notifyWatches',
-	        value: function notifyWatches(dispose) {
-	            this._watches.forEach(function (watch) {
-	                return watch.notify(dispose);
-	            });
-	        }
-	    }, {
-	        key: 'dispose',
-	        value: function dispose() {
-	            this._disposed = true;
-	            this.notifyWatches(true);
-	            this.dispaseWatches();
-	            this._dirty = true;
-	
-	            this._onDispose.forEach(function (f) {
-	                return f();
-	            });
-	        }
-	    }, {
-	        key: 'disposeInternal',
-	        value: function disposeInternal() {
-	            this._disposed = true;
-	            this.notifyWatches(true);
 	        }
 	    }, {
 	        key: 'addOnDispose',
 	        value: function addOnDispose(f) {
-	            this._onDispose.push(f);
+	            this._onDispose.add(f);
+	        }
+	    }, {
+	        key: 'dispose',
+	        value: function dispose() {
+	            var _this = this;
+	
+	            if (this._observers.size === 0) {
+	                this._observables.forEach(function (observable) {
+	                    return observable.unsubscribe(_this);
+	                });
+	                this._onDispose.forEach(function (f) {
+	                    return f();
+	                });
+	            }
 	        }
 	    }]);
 	
-	    return Watchable;
+	    return Observable;
 	}();
 	
-	var Ratom = exports.Ratom = function (_Watchable) {
-	    _inherits(Ratom, _Watchable);
+	var Atom = function (_Observable) {
+	    _inherits(Atom, _Observable);
 	
-	    function Ratom(value) {
-	        _classCallCheck(this, Ratom);
+	    function Atom(value) {
+	        _classCallCheck(this, Atom);
 	
-	        var _this2 = _possibleConstructorReturn(this, (Ratom.__proto__ || Object.getPrototypeOf(Ratom)).call(this));
+	        var _this2 = _possibleConstructorReturn(this, (Atom.__proto__ || Object.getPrototypeOf(Atom)).call(this));
 	
 	        _this2._value = value;
 	        _this2._id = id++;
 	        _this2._changed = true;
+	        _this2._subject = new Rx.BehaviorSubject(value);
 	        return _this2;
 	    }
 	
-	    _createClass(Ratom, [{
+	    _createClass(Atom, [{
+	        key: 'subject',
+	        value: function subject() {
+	            return this._subject;
+	        }
+	    }, {
+	        key: '_valueChanged',
+	        value: function _valueChanged() {
+	            this._subject.onNext(this._value);
+	            this._notifyObservers();
+	        }
+	    }, {
 	        key: 'reset',
 	        value: function reset(value) {
 	            this._changed = this._value !== value;
 	            this._value = value;
-	            this.notifyWatches(false);
+	            this._valueChanged();
 	            return this._value;
 	        }
 	    }, {
@@ -637,13 +710,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	            this._value = f(this._value, args);
 	            this._changed = this._value !== oldValue;
-	            this.notifyWatches(false);
+	            this._valueChanged();
 	            return this._value;
 	        }
 	    }, {
 	        key: 'deref',
 	        value: function deref() {
-	            watchInCtx(this);
 	            this._changed = false;
 	            return this._value;
 	        }
@@ -664,27 +736,46 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'id',
 	        value: function id() {
-	            return 'ra-' + this._id;
+	            return 'a-' + this._id;
+	        }
+	    }]);
+	
+	    return Atom;
+	}(Observable);
+	
+	var Ratom = function (_Atom) {
+	    _inherits(Ratom, _Atom);
+	
+	    function Ratom(value) {
+	        _classCallCheck(this, Ratom);
+	
+	        return _possibleConstructorReturn(this, (Ratom.__proto__ || Object.getPrototypeOf(Ratom)).call(this, value));
+	    }
+	
+	    _createClass(Ratom, [{
+	        key: 'deref',
+	        value: function deref() {
+	            watchInCtx(this);
+	            return _get(Ratom.prototype.__proto__ || Object.getPrototypeOf(Ratom.prototype), 'deref', this).call(this);
 	        }
 	    }]);
 	
 	    return Ratom;
-	}(Watchable);
+	}(Atom);
 	
-	var Reaction = function (_Watchable2) {
-	    _inherits(Reaction, _Watchable2);
+	var Reaction = function (_Observable2) {
+	    _inherits(Reaction, _Observable2);
 	
 	    function Reaction(f) {
 	        _classCallCheck(this, Reaction);
 	
-	        var _this4 = _possibleConstructorReturn(this, (Reaction.__proto__ || Object.getPrototypeOf(Reaction)).call(this));
+	        var _this5 = _possibleConstructorReturn(this, (Reaction.__proto__ || Object.getPrototypeOf(Reaction)).call(this));
 	
-	        _this4._f = f;
-	        _this4._dirty = true;
-	        _this4._id = id++;
-	        _this4._changed = true;
-	
-	        return _this4;
+	        _this5._f = f;
+	        _this5._dirty = true;
+	        _this5._id = id++;
+	        _this5._changed = true;
+	        return _this5;
 	    }
 	
 	    _createClass(Reaction, [{
@@ -701,9 +792,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'deref',
 	        value: function deref() {
-	            if (this._disposed) {
-	                throw new Error('Reaction already disposed');
-	            }
 	            watchInCtx(this);
 	            if (this._dirty) {
 	                this._run();
@@ -713,27 +801,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    }, {
 	        key: 'notify',
-	        value: function notify(dispose) {
-	            if (dispose) {
-	                this.disposeInternal();
-	                this._dirty = true;
-	            } else {
-	                this._dirty = true;
-	                var oldState = this._state;
-	                this._run();
-	                this._changed = oldState !== this._state;
-	                if (oldState !== this._state) {
-	                    this.notifyWatches(false);
-	                }
+	        value: function notify() {
+	            this._dirty = true;
+	            var oldState = this._state;
+	            this._run();
+	            this._changed = oldState !== this._state;
+	            if (oldState !== this._state) {
+	                this._notifyObservers();
 	            }
 	        }
 	    }, {
 	        key: 'map',
 	        value: function map(f) {
-	            var _this5 = this;
+	            var _this6 = this;
 	
 	            return makeReaction(function () {
-	                return f(_this5.deref());
+	                return f(_this6.deref());
 	            });
 	        }
 	    }, {
@@ -741,17 +824,37 @@ return /******/ (function(modules) { // webpackBootstrap
 	        value: function isChanged() {
 	            return this._changed;
 	        }
+	    }, {
+	        key: 'dispose',
+	        value: function dispose() {
+	            _get(Reaction.prototype.__proto__ || Object.getPrototypeOf(Reaction.prototype), 'dispose', this).call(this);
+	            this._dirty = true;
+	        }
 	    }]);
 	
 	    return Reaction;
-	}(Watchable);
+	}(Observable);
 	
 	function makeReaction(f) {
 	    return new Reaction(f);
 	}
+	
+	function makeAtom(value) {
+	    return new Atom(value);
+	}
+	
+	function makeRatom(value) {
+	    return new Ratom(value);
+	}
 
 /***/ },
 /* 7 */
+/***/ function(module, exports) {
+
+	module.exports = __WEBPACK_EXTERNAL_MODULE_7__;
+
+/***/ },
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -813,7 +916,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -831,7 +934,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _interceptor = __webpack_require__(4);
 	
-	var _router = __webpack_require__(9);
+	var _router = __webpack_require__(10);
 	
 	var router = _interopRequireWildcard(_router);
 	
@@ -961,7 +1064,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -981,9 +1084,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var Immutable = _interopRequireWildcard(_immutable);
 	
-	var _events = __webpack_require__(7);
+	var _events = __webpack_require__(8);
 	
-	var _interop = __webpack_require__(10);
+	var _interop = __webpack_require__(11);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -1228,7 +1331,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1236,13 +1339,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.nextTick = undefined;
+	exports.log = exports.nextTick = undefined;
 	exports.afterRender = afterRender;
 	exports.reagentId = reagentId;
+	exports.isDebug = isDebug;
+	exports.isTraceReact = isTraceReact;
+	exports.toggleLog = toggleLog;
 	
-	var _batching = __webpack_require__(11);
+	var _batching = __webpack_require__(12);
 	
 	var batching = _interopRequireWildcard(_batching);
+	
+	var _ratom = __webpack_require__(6);
+	
+	var ratom = _interopRequireWildcard(_ratom);
+	
+	var _immutable = __webpack_require__(3);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -1255,9 +1369,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	function reagentId(value) {
 	    return value.id();
 	}
+	
+	var log = exports.log = ratom.makeAtom(Immutable.Map({
+	    debug: false,
+	    traceReact: false,
+	    traceSub: false
+	}));
+	
+	function isEnabled(value) {
+	    return log.deref().get(value);
+	}
+	function isDebug() {
+	    return isEnabled('debug');
+	}
+	
+	function isTraceReact() {
+	    return isEnabled('traceReact');
+	}
+	
+	function toggleLog(name, value) {
+	    log.swap(function (container) {
+	        return container.update(name, function (old) {
+	            return typeof value !== 'undefined' ? value : !old;
+	        });
+	    });
+	}
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -1278,6 +1417,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+	
 	function nextTick(f) {
 	    if (requestAnimationFrame) {
 	        requestAnimationFrame(f);
@@ -1287,11 +1428,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function runQueue(components) {
-	    components.sort(function (o1, o2) {
+	    var s = [].concat(_toConsumableArray(new Set(components)));
+	    s.sort(function (o1, o2) {
 	        return o1.state.renderOrder - o2.state.renderOrder;
 	    });
 	
-	    components.forEach(function (component) {
+	    s.forEach(function (component) {
 	        return component.tryForceUpdate();
 	    });
 	}
@@ -1306,7 +1448,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _createClass(RenderQueue, [{
 	        key: 'enqueue',
 	        value: function enqueue(k, f) {
-	            if (!this._k) {
+	            if (!this[k]) {
 	                this[k] = [];
 	            }
 	            this[k].push(f);
@@ -1407,7 +1549,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1427,23 +1569,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.viewSP = viewSP;
 	exports.viewSV = viewSV;
 	
-	var _subs = __webpack_require__(13);
+	var _subs = __webpack_require__(14);
 	
 	var subs = _interopRequireWildcard(_subs);
 	
-	var _react = __webpack_require__(14);
+	var _react = __webpack_require__(15);
 	
 	var React = _interopRequireWildcard(_react);
 	
-	var _shouldupdate = __webpack_require__(15);
+	var _shouldupdate = __webpack_require__(16);
 	
 	var _ratom = __webpack_require__(6);
 	
 	var ratom = _interopRequireWildcard(_ratom);
 	
-	var _batching = __webpack_require__(11);
+	var _batching = __webpack_require__(12);
 	
 	var batching = _interopRequireWildcard(_batching);
+	
+	var _interop = __webpack_require__(11);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
@@ -1582,14 +1726,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	            renderCycle: 0
 	        };
 	    },
-	    watching: function watching(watch) {
+	    observe: function observe(watch) {
 	        this.state.watching.add(new MyDeref(this.state.renderCycle, watch));
 	    },
+	    // unobserve: function(observable) {
+	    //     this.state.watching.delete(observable);
+	    // },
 	    notify: function notify(dispose) {
+	        this.traceReact('Notify');
 	        batching.queueRender(this);
 	    },
 	    tryForceUpdate: function tryForceUpdate() {
 	        if (shouldUpdateByDerefed(this.state.watching)) {
+	            this.traceReact('Force update');
 	            // console.log('Force update', obj.getDisplayName());
 	            this.forceUpdate();
 	        }
@@ -1626,7 +1775,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                var watch = _step2.value;
 	
 	                if (watch.shouldDispose(this.state.renderCycle)) {
-	                    watch.dispose();
+	                    // watch.dispose();
 	                    this.state.watching.delete(watch);
 	                }
 	            }
@@ -1647,6 +1796,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	    },
 	    componentWillUnmount: function componentWillUnmount() {
 	        this.unsubscribe();
+	    },
+	    traceReact: function traceReact(message) {
+	        if ((0, _interop.isTraceReact)()) {
+	            console.debug(message, this.getDisplayName(), {
+	                order: this.state.renderOrder,
+	                render: this.state.renderCycle,
+	                props: this.props, state: this.state
+	            });
+	        }
 	    }
 	};
 	
@@ -1690,6 +1848,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    componentObj.render = function () {
 	        var _this = this;
 	
+	        this.traceReact('Render');
 	        return ratom.runInCtx(this, function () {
 	            return oldRender.call(_this, _this.props);
 	        });
@@ -1708,6 +1867,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    componentObj.render = function () {
 	        var _this2 = this;
 	
+	        this.traceReact('Render');
 	        return ratom.runInCtx(this, function () {
 	            return oldRender.apply(_this2, _this2.props.argv);
 	        });
@@ -1737,7 +1897,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1766,13 +1926,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _db = __webpack_require__(5);
 	
-	var _interop = __webpack_require__(10);
+	var _interop = __webpack_require__(11);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	var kind = exports.kind = 'sub';
 	
-	var queryReaction = new _ratom.Ratom(Immutable.Map());
+	var queryReaction = (0, _ratom.makeAtom)(Immutable.Map());
 	
 	/**
 	 * Runs on-dispose for all subscriptions we have in the subscription cache.
@@ -1968,12 +2128,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (typeof dynVec === 'undefined') {
 	            var _ret3 = function () {
 	                var subscriptions = inputsFn(queryVec),
-	                    reactionId = new _ratom.Ratom(null),
 	                    reaction = (0, _ratom.makeReaction)(function () {
 	                    return computationFn(derefInputSignals(subscriptions, queryId), queryVec);
 	                });
 	
-	                reactionId.reset((0, _interop.reagentId)(reaction));
 	                return {
 	                    v: reaction
 	                };
@@ -1983,12 +2141,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        } else {
 	            var _ret4 = function () {
 	                var subscriptions = inputsFn(queryVec, dynVec),
-	                    reactionId = new _ratom.Ratom(null),
 	                    reaction = (0, _ratom.makeReaction)(function () {
 	                    return computationFn(derefInputSignals(subscriptions, queryId), queryVec, dynVec);
 	                });
 	
-	                reactionId.reset((0, _interop.reagentId)(reaction));
 	                return {
 	                    v: reaction
 	                };
@@ -2000,13 +2156,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports) {
 
-	module.exports = __WEBPACK_EXTERNAL_MODULE_14__;
+	module.exports = __WEBPACK_EXTERNAL_MODULE_15__;
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2019,7 +2175,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	exports.shouldUpdate = shouldUpdate;
 	
-	var _utils = __webpack_require__(16);
+	var _utils = __webpack_require__(17);
 	
 	/**
 	 * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
@@ -2064,7 +2220,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 16 */
+/* 17 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2104,7 +2260,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 17 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2123,10 +2279,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.enrich = enrich;
 	exports.after = after;
 	exports.onChanges = onChanges;
+	exports.when = when;
 	
 	var _interceptor = __webpack_require__(4);
 	
-	var _immutablediff = __webpack_require__(18);
+	var _immutablediff = __webpack_require__(19);
 	
 	var _immutablediff2 = _interopRequireDefault(_immutablediff);
 	
@@ -2401,17 +2558,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    });
 	}
+	
+	function when(booleanProvider, interceptor) {
+	    return (0, _interceptor.toInterceptor)({
+	        id: 'when',
+	        before: function whenBefore(ctx) {
+	            if (booleanProvider()) {
+	                return (0, _interceptor.nextInterceptor)(ctx, interceptor);
+	            }
+	            return ctx;
+	        }
+	    });
+	}
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 	
 	var Immutable = __webpack_require__(3);
-	var utils = __webpack_require__(19);
-	var lcs = __webpack_require__(20);
-	var path = __webpack_require__(21);
+	var utils = __webpack_require__(20);
+	var lcs = __webpack_require__(21);
+	var path = __webpack_require__(22);
 	var concatPath = path.concat,
 	                  escape = path.escape,
 	                  op = utils.op,
@@ -2526,7 +2695,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 19 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2549,7 +2718,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 20 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2701,7 +2870,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 21 */
+/* 22 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -2737,6 +2906,94 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	module.exports = Path;
+
+/***/ },
+/* 23 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.Index = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _immutable = __webpack_require__(3);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	var _rx = __webpack_require__(7);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	var LISTENER_SENTINEL = {};
+	
+	var Index = exports.Index = function () {
+	    function Index(rx) {
+	        _classCallCheck(this, Index);
+	
+	        this.listeners = Immutable.Map();
+	        this.rx = rx;
+	    }
+	
+	    _createClass(Index, [{
+	        key: 'sub',
+	        value: function sub(path, def) {
+	            var _this = this;
+	
+	            var self = this;
+	
+	            var slices = [];
+	            for (var i = 0; i < path.length; i++) {
+	                slices.push(Array.prototype.slice.call(path.slice(0, i + 1)));
+	            }
+	            this.listeners = slices.reduce(function (acc, pathSlice) {
+	                var parentPath = pathSlice.slice(0, pathSlice.length - 1);
+	                var parentRx = parentPath.length === 0 ? _this.rx() : acc.getIn(parentPath.concat(LISTENER_SENTINEL));
+	                var lastFragment = pathSlice[pathSlice.length - 1];
+	                return acc.updateIn(pathSlice.concat(LISTENER_SENTINEL), function (old) {
+	                    if (old) {
+	                        return old;
+	                    }
+	                    var subject = parentRx.map(function (a) {
+	                        if (a && a.get) {
+	                            return a.get(lastFragment);
+	                        }
+	                    }).distinctUntilChanged(function (x) {
+	                        return x;
+	                    }, function (x, y) {
+	                        return x === y;
+	                    }).shareReplay(1);
+	                    var oldSubscribe = subject.subscribe;
+	                    subject.subscribe = function () {
+	                        var sub = oldSubscribe.apply(this, arguments),
+	                            s = this;
+	
+	                        return Rx.Disposable.create(function () {
+	                            sub.dispose();
+	                            if (s._count === 0) {
+	                                self.listeners = self.listeners.removeIn(pathSlice);
+	                            }
+	                        });
+	                    };
+	                    return subject;
+	                });
+	            }, this.listeners);
+	
+	            return this.listeners.getIn(path.concat([LISTENER_SENTINEL])).map(function (a) {
+	                return typeof a !== 'undefined' ? a : def;
+	            });
+	        }
+	    }]);
+
+	    return Index;
+	}();
 
 /***/ }
 /******/ ])

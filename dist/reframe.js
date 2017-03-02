@@ -76,6 +76,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.indexPath = indexPath;
 	exports.registerSub = registerSub;
 	exports.registerHandler = registerHandler;
+	exports.compMiddleware = compMiddleware;
 	
 	var _cofx = __webpack_require__(1);
 	
@@ -259,12 +260,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function registerSub(name, handler) {
-	    return subs.regSub(name, handler);
+	    return subs.registerSub(name, handler);
 	}
 	
 	function registerHandler(id, interceptors, handler) {
 	    return regEventDb(id, interceptors, handler);
 	}
+	
+	function compMiddleware(interceptors) {
+	    return interceptors;
+	}
+	
+	module.exports.default = module.exports;
 
 /***/ },
 /* 1 */
@@ -390,7 +397,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.getEffect = getEffect;
 	exports.assocEffect = assocEffect;
 	exports.getCoeffect = getCoeffect;
-	exports.assocCoffect = assocCoffect;
+	exports.assocCoeffect = assocCoeffect;
 	exports.enqueue = enqueue;
 	exports.nextInterceptor = nextInterceptor;
 	exports.execute = execute;
@@ -445,7 +452,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return ctx.get('coeffects');
 	}
 	
-	function assocCoffect(ctx, key, coeffect) {
+	function assocCoeffect(ctx, key, coeffect) {
 	    return ctx.setIn(['coeffects', key], coeffect);
 	}
 	
@@ -502,9 +509,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var db = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 	
 	    var ctx = Immutable.Map();
-	    ctx = assocCoffect(ctx, 'event', event);
+	    ctx = assocCoeffect(ctx, 'event', event);
 	    if (typeof db !== 'undefined') {
-	        ctx = assocCoffect(ctx, 'db', db);
+	        ctx = assocCoeffect(ctx, 'db', db);
 	    }
 	    ctx = enqueue(ctx, interceptors);
 	
@@ -563,6 +570,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.makeReaction = makeReaction;
 	exports.makeAtom = makeAtom;
 	exports.makeRatom = makeRatom;
+	exports.makeRxReaction = makeRxReaction;
+	exports.deref = deref;
+	
+	var _immutable = __webpack_require__(3);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
 	
 	var _rx = __webpack_require__(7);
 	
@@ -688,8 +701,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_valueChanged',
 	        value: function _valueChanged() {
-	            this._subject.onNext(this._value);
-	            this._notifyObservers();
+	            if (this._changed) {
+	                this._subject.onNext(this._value);
+	                this._notifyObservers();
+	            }
 	        }
 	    }, {
 	        key: 'reset',
@@ -845,6 +860,82 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function makeRatom(value) {
 	    return new Ratom(value);
+	}
+	
+	var RxReaction = function (_Observable3) {
+	    _inherits(RxReaction, _Observable3);
+	
+	    function RxReaction(rx) {
+	        _classCallCheck(this, RxReaction);
+	
+	        var _this7 = _possibleConstructorReturn(this, (RxReaction.__proto__ || Object.getPrototypeOf(RxReaction)).call(this));
+	
+	        _this7._subj = new Rx.BehaviorSubject();
+	        _this7._rx = rx;
+	        if (!_this7._rx.distinctUntilChanged) {
+	            console.trace('no distinct', rx);
+	        }
+	        return _this7;
+	    }
+	
+	    _createClass(RxReaction, [{
+	        key: 'id',
+	        value: function id() {
+	            return 'rxjs-' + this._id;
+	        }
+	    }, {
+	        key: 'deref',
+	        value: function deref() {
+	            var _this8 = this;
+	
+	            if (!this._subscription) {
+	                this._subscription = this._rx.distinctUntilChanged(function (a) {
+	                    return a;
+	                }, function (a, b) {
+	                    return a === b;
+	                }).doOnNext(function () {
+	                    _this8._notifyObservers();
+	                }).subscribe(this._subj);
+	            }
+	            var value = this._subj.getValue();
+	            return value;
+	        }
+	    }, {
+	        key: 'map',
+	        value: function map(f) {
+	            var _this9 = this;
+	
+	            return makeReaction(function () {
+	                return f(_this9.deref());
+	            });
+	        }
+	    }, {
+	        key: 'dispose',
+	        value: function dispose() {
+	            _get(RxReaction.prototype.__proto__ || Object.getPrototypeOf(RxReaction.prototype), 'dispose', this).call(this);
+	            this._subscription.dispose();
+	            delete this._subscription;
+	        }
+	    }]);
+	
+	    return RxReaction;
+	}(Observable);
+	
+	function makeRxReaction(rx) {
+	    return new RxReaction(rx);
+	}
+	
+	function deref(observable, transform) {
+	    if (observable instanceof Rx.Observable) {
+	        if (transform) {
+	            return makeRxReaction(observable).map(transform).deref();
+	        }
+	        return makeRxReaction(observable).deref();
+	    }
+	    if (transform) {
+	        return observable.map(transform).deref();
+	    }
+	    return observable.deref();
 	}
 
 /***/ },
@@ -1710,10 +1801,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var SubscriptionMixin = exports.SubscriptionMixin = {
 	    derefSub: function derefSub(subVec, transform) {
-	        if (transform) {
-	            return subs.subscribe(subVec).map(transform).deref();
-	        }
-	        return subs.subscribe(subVec).deref();
+	        return ratom.deref(subs.subscribe(subVec), transform);
 	    },
 	
 	    getDisplayName: function getDisplayName() {
@@ -1750,10 +1838,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return updateByProps || updateByState;
 	    },
 	    deref: function deref(rx, aTransform, aId) {
-	        if (aTransform) {
-	            return rx.map(aTransform).deref();
-	        }
-	        return rx.deref();
+	        return ratom.deref(rx, aTransform);
 	    },
 	    unsubscribe: function unsubscribe() {
 	        this.state.watching.forEach(function (watch) {
@@ -1915,10 +2000,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.clearAllHandlers = clearAllHandlers;
 	exports.subscribe = subscribe;
 	exports.regSub = regSub;
+	exports.registerSub = registerSub;
 	
 	var _immutable = __webpack_require__(3);
 	
 	var Immutable = _interopRequireWildcard(_immutable);
+	
+	var _rx = __webpack_require__(7);
+	
+	var Rx = _interopRequireWildcard(_rx);
 	
 	var _ratom = __webpack_require__(6);
 	
@@ -2112,6 +2202,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	}
 	
+	function checkRx(reaction) {
+	    if (reaction instanceof Rx.Observable) {
+	        return (0, _ratom.makeRxReaction)(reaction);
+	    }
+	    return reaction;
+	}
+	
 	function regSub(queryId) {
 	    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
 	        args[_key - 1] = arguments[_key];
@@ -2122,7 +2219,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        errHeader = "re-frame: reg-sub for " + queryId + ", ",
 	        inputsFn = makeInputsFn(inputArgs);
 	
-	    (0, _registrar.registerHandler)(kind, queryId, function subsHandlerFn(db, queryVec) {
+	    return (0, _registrar.registerHandler)(kind, queryId, function subsHandlerFn(db, queryVec) {
 	        var dynVec = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 	
 	        if (typeof dynVec === 'undefined') {
@@ -2152,6 +2249,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	            if ((typeof _ret4 === 'undefined' ? 'undefined' : _typeof(_ret4)) === "object") return _ret4.v;
 	        }
+	    });
+	}
+	
+	function registerSub(queryId, computationFn) {
+	    return (0, _registrar.registerHandler)(kind, queryId, function subsRxHandlerFn(db, queryVec) {
+	        var dynVec = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
+	
+	        return (0, _ratom.makeRxReaction)(computationFn(db.subject(), queryVec));
 	    });
 	}
 
@@ -2287,6 +2392,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _immutablediff2 = _interopRequireDefault(_immutablediff);
 	
+	var _immutable = __webpack_require__(3);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 	
 	var debug = exports.debug = (0, _interceptor.toInterceptor)({
@@ -2421,7 +2532,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            ctx = ctx.update(dbStoreKey, Immutable.List(), function (old) {
 	                return old.push(originalDb);
 	            });
-	            ctx = (0, _interceptor.assocCoeffect)(ctx, 'db', originalDb.getIn(path));
+	            ctx = (0, _interceptor.assocCoeffect)(ctx, 'db', originalDb.getIn(path, Immutable.Map()));
 	            return ctx;
 	        },
 	        after: function pathAfter(ctx) {
@@ -2481,7 +2592,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var event = (0, _interceptor.getCoeffect)(ctx, 'event'),
 	                db = (0, _interceptor.getEffect)(ctx, 'db') || (0, _interceptor.getCoeffect)(ctx, 'db');
 	
-	            return (0, _interceptor.assocEffect)(ctx, 'db', f(db, event));
+	            return (0, _interceptor.assocEffect)(ctx, 'db', f(db, event, (0, _interceptor.getCoeffect)(ctx, 'db')));
 	        }
 	    });
 	}
@@ -2503,7 +2614,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        after: function afterAfter(ctx) {
 	            var event = (0, _interceptor.getCoeffect)(ctx, 'event'),
 	                db = (0, _interceptor.getEffect)(ctx, 'db') || (0, _interceptor.getCoeffect)(ctx, 'db');
-	            f(db, event);
+	            f(db, event, (0, _interceptor.getCoeffect)(ctx, 'db'));
 	            return ctx;
 	        }
 	    });

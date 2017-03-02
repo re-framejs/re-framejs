@@ -1,5 +1,6 @@
 import {toInterceptor, getEffect, getCoeffect, assocEffect, assocCoeffect, nextInterceptor} from 'reframe/interceptor';
 import immutablediff from 'immutablediff';
+import * as Immutable from 'immutable';
 
 export const debug = toInterceptor({
     id: 'debug',
@@ -135,7 +136,7 @@ export function path(path) {
             const originalDb = getCoeffect(ctx, 'db');
 
             ctx = ctx.update(dbStoreKey, Immutable.List(), old => old.push(originalDb));
-            ctx = assocCoeffect(ctx, 'db', originalDb.getIn(path));
+            ctx = assocCoeffect(ctx, 'db', originalDb.getIn(path, Immutable.Map()));
             return ctx;
         },
         after: function pathAfter(ctx) {
@@ -197,7 +198,7 @@ export function enrich(f) {
                 event = getCoeffect(ctx, 'event'),
                 db = getEffect(ctx, 'db') || getCoeffect(ctx, 'db');
 
-            return assocEffect(ctx, 'db', f(db, event));
+            return assocEffect(ctx, 'db', f(db, event, getCoeffect(ctx, 'db')));
         }
     });
 }
@@ -220,7 +221,7 @@ export function after(f) {
             const
                 event = getCoeffect(ctx, 'event'),
                 db = getEffect(ctx, 'db') || getCoeffect(ctx, 'db');
-            f(db, event);
+            f(db, event, getCoeffect(ctx, 'db'));
             return ctx;
         }
     });

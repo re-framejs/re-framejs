@@ -138,9 +138,15 @@ export function indexPath(path, def) {
 }
 
 export function registerSub(name, handler) {
-    return subs.regSub(name, handler);
+    return subs.registerSub(name, handler);
 }
 
 export function registerHandler(id, interceptors, handler) {
     return regEventDb(id, interceptors, handler);
 }
+
+export function compMiddleware(interceptors) {
+    return interceptors;
+}
+
+module.exports.default = module.exports;

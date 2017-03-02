@@ -1,5 +1,8 @@
+import * as Immutable from 'immutable';
 import * as Rx from 'rx';
+
 export const db$ = new Rx.BehaviorSubject(Immutable.Map());
+
 
 const ratomCtx = [];
 let id = 1;
@@ -83,8 +86,10 @@ class Atom extends Observable {
     }
 
     _valueChanged() {
-        this._subject.onNext(this._value);
-        this._notifyObservers();
+        if (this._changed) {
+            this._subject.onNext(this._value);
+            this._notifyObservers();
+        }
     }
 
     reset(value) {
@@ -192,4 +197,60 @@ export function makeAtom(value) {
 
 export function makeRatom(value) {
     return new Ratom(value);
+}
+
+class RxReaction extends Observable {
+    constructor(rx) {
+        super();
+        this._subj = new Rx.BehaviorSubject();
+        this._rx = rx;
+        if (!this._rx.distinctUntilChanged) {
+            console.trace('no distinct', rx);
+        }
+    }
+
+    id() {
+        return 'rxjs-' + this._id;
+    }
+
+    deref() {
+        if (!this._subscription) {
+            this._subscription = this._rx
+                .distinctUntilChanged(a => a, (a, b) => a === b)
+                .doOnNext(() => {
+                    this._notifyObservers();
+                })
+                .subscribe(this._subj);
+        }
+        const value = this._subj.getValue();
+        return value;
+    }
+
+    map(f) {
+        return makeReaction(() => f(this.deref()));
+    }
+
+    dispose() {
+        super.dispose();
+        this._subscription.dispose();
+        delete this._subscription;
+    }
+
+}
+
+export function makeRxReaction(rx) {
+    return new RxReaction(rx);
+}
+
+export function deref(observable, transform) {
+    if (observable instanceof Rx.Observable) {
+        if (transform) {
+            return makeRxReaction(observable).map(transform).deref();
+        }
+        return makeRxReaction(observable).deref();
+    }
+    if (transform) {
+        return observable.map(transform).deref();
+    }
+    return observable.deref();
 }

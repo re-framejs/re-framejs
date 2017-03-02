@@ -78,12 +78,10 @@ class MyDeref {
     }
 }
 
+
 export let SubscriptionMixin = {
     derefSub(subVec, transform) {
-        if (transform) {
-            return subs.subscribe(subVec).map(transform).deref();
-        }
-        return subs.subscribe(subVec).deref();
+        return ratom.deref(subs.subscribe(subVec), transform);
     },
     getDisplayName: function () {
         return this.constructor.displayName;
@@ -119,10 +117,7 @@ export let SubscriptionMixin = {
         return updateByProps || updateByState;
     },
     deref: function (rx, aTransform, aId) {
-        if (aTransform) {
-            return rx.map(aTransform).deref();
-        }
-        return rx.deref();
+        return ratom.deref(rx, aTransform);
     },
     unsubscribe: function () {
         this.state.watching.forEach(watch => watch.dispose());

@@ -34,7 +34,7 @@ export function getCoeffect(ctx, key = null, notFound = null) {
     return ctx.get('coeffects');
 }
 
-export function assocCoffect(ctx, key, coeffect) {
+export function assocCoeffect(ctx, key, coeffect) {
     return ctx.setIn(['coeffects', key], coeffect);
 }
 
@@ -85,9 +85,9 @@ export function nextInterceptor(ctx, interceptor) {
 
 function context(event, interceptors, db = undefined) {
     let ctx = Immutable.Map();
-    ctx = assocCoffect(ctx, 'event', event);
+    ctx = assocCoeffect(ctx, 'event', event);
     if (typeof db !== 'undefined') {
-        ctx = assocCoffect(ctx, 'db', db);
+        ctx = assocCoeffect(ctx, 'db', db);
     }
     ctx = enqueue(ctx, interceptors);
 

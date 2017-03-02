@@ -1,5 +1,6 @@
 import * as  Immutable from 'immutable';
-import {makeAtom, makeReaction} from 'reframe/ratom';
+import * as Rx from 'rx';
+import {makeAtom, makeReaction, makeRxReaction} from 'reframe/ratom';
 import {registerHandler, getHandler, clearHandlers} from 'reframe/registrar';
 import {appDb} from 'reframe/db';
 import {reagentId} from 'reframe/interop';
@@ -149,6 +150,13 @@ function makeInputsFn(inputArgs) {
     }
 }
 
+function checkRx(reaction) {
+    if (reaction instanceof Rx.Observable) {
+        return makeRxReaction(reaction);
+    }
+    return reaction;
+}
+
 export function regSub(queryId, ...args) {
     const
         computationFn = args[args.length - 1],
@@ -156,7 +164,7 @@ export function regSub(queryId, ...args) {
         errHeader = "re-frame: reg-sub for " + queryId + ", ",
         inputsFn = makeInputsFn(inputArgs);
 
-    registerHandler(kind, queryId, function subsHandlerFn(db, queryVec, dynVec = undefined) {
+    return registerHandler(kind, queryId, function subsHandlerFn(db, queryVec, dynVec = undefined) {
         if (typeof  dynVec === 'undefined') {
             const
                 subscriptions = inputsFn(queryVec),
@@ -170,5 +178,11 @@ export function regSub(queryId, ...args) {
 
             return reaction;
         }
+    });
+}
+
+export function registerSub(queryId, computationFn) {
+    return registerHandler(kind, queryId, function subsRxHandlerFn(db, queryVec, dynVec = undefined) {
+        return makeRxReaction(computationFn(db.subject(), queryVec));
     });
 }

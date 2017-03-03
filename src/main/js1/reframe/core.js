@@ -4,7 +4,7 @@ import * as events from 'reframe/events';
 import * as fx from 'reframe/fx';
 import * as interceptor from 'reframe/interceptor';
 import * as interop from 'reframe/interop';
-import {makeRatom, makeReaction} from 'reframe/ratom';
+import {makeRatom, makeReaction, makeCursor} from 'reframe/ratom';
 import * as react from 'reframe/react';
 import * as registrar from 'reframe/registrar';
 import * as router from 'reframe/router';
@@ -29,6 +29,10 @@ export function atom(value) {
 
 export function reaction(f) {
     return makeReaction(f);
+}
+
+export function cursor(atom, path) {
+    return makeCursor(atom, path);
 }
 
 export const appDb = db.appDb;

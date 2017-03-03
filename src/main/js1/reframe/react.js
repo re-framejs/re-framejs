@@ -59,10 +59,11 @@ function guid() {
     return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
 }
 
-class MyDeref {
-    constructor(renderCycle, watch) {
+class MyDeref extends ratom.Observable{
+    constructor(renderCycle, observable) {
+        super('de');
         this._renderCycle = renderCycle;
-        this._watch = watch;
+        this._observable = observable;
     }
 
     shouldDispose(renderCycle) {
@@ -70,6 +71,7 @@ class MyDeref {
     }
 
     dispose() {
+        super.dispose();
         this._watch.dispose();
     }
 
@@ -104,6 +106,7 @@ export let SubscriptionMixin = {
         batching.queueRender(this);
     },
     tryForceUpdate: function () {
+            this.traceReact('try Force update');
         if (shouldUpdateByDerefed(this.state.watching)) {
             this.traceReact('Force update');
             // console.log('Force update', obj.getDisplayName());

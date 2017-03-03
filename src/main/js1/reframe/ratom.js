@@ -22,11 +22,17 @@ function watchInCtx(obj) {
     }
 }
 
-class Observable {
-    constructor() {
+export class Observable {
+    constructor(type) {
+        this._type = type;
+        this._id = id++;
         this._observers = new Set();
         this._observables = new Set();
         this._onDispose = new Set();
+    }
+
+    id() {
+        return this._type + '-' + this._id;
     }
 
     subscribe(observer) {
@@ -70,13 +76,16 @@ class Observable {
             this._onDispose.forEach(f => f());
         }
     }
+
+    map(f) {
+        return makeReaction(() => f(this.deref()));
+    }
 }
 
 class Atom extends Observable {
     constructor(value) {
-        super();
+        super('a');
         this._value = value;
-        this._id = id++;
         this._changed = true;
         this._subject = new Rx.BehaviorSubject(value);
     }
@@ -112,22 +121,15 @@ class Atom extends Observable {
         return this._value;
     }
 
-    map(f) {
-        return makeReaction(() => f(this.deref()));
-    }
-
     isChanged() {
         return this._changed;
-    }
-
-    id() {
-        return 'a-' + this._id;
     }
 }
 
 class Ratom extends Atom {
     constructor(value) {
         super(value);
+        this._type ='ra';
     }
 
     deref() {
@@ -138,15 +140,10 @@ class Ratom extends Atom {
 
 class Reaction extends Observable {
     constructor(f) {
-        super();
+        super('rx');
         this._f = f;
         this._dirty = true;
-        this._id = id++;
         this._changed = true;
-    }
-
-    id() {
-        return 'rx-' + this._id;
     }
 
     _run() {
@@ -173,10 +170,6 @@ class Reaction extends Observable {
         }
     }
 
-    map(f) {
-        return makeReaction(() => f(this.deref()));
-    }
-
     isChanged() {
         return this._changed;
     }
@@ -184,6 +177,61 @@ class Reaction extends Observable {
     dispose() {
         super.dispose();
         this._dirty = true;
+    }
+}
+
+class RxReaction extends Observable {
+    constructor(rx) {
+        super('rxjs');
+        this._subj = new Rx.BehaviorSubject();
+        this._rx = rx;
+        if (!this._rx.distinctUntilChanged) {
+            console.trace('no distinct', rx);
+        }
+    }
+
+    deref() {
+        if (!this._subscription) {
+            this._subscription = this._rx
+                .distinctUntilChanged(a => a, (a, b) => a === b)
+                .doOnNext(() => {
+                    this._notifyObservers();
+                })
+                .subscribe(this._subj);
+        }
+        return this._subj.getValue();
+    }
+
+    dispose() {
+        super.dispose();
+        this._subscription.dispose();
+        delete this._subscription;
+    }
+
+}
+
+class Cursor extends Observable {
+    constructor(atom, path) {
+        super('cu');
+        this._atom = atom;
+        this._cursor = atom.map(() => atom.deref().getIn(path));
+        this._path = path;
+    }
+
+    deref() {
+        return this._cursor.deref();
+    }
+
+    dispose() {
+        this._cursor.dispose();
+    }
+
+    reset(value) {
+        this._atom.swap(old => old.setIn(this._path, value));
+    }
+
+    swap(f, ...args) {
+        this._atom.swap(old => old.updateIn(this._path, value => f(value, ...args)));
     }
 }
 
@@ -199,47 +247,12 @@ export function makeRatom(value) {
     return new Ratom(value);
 }
 
-class RxReaction extends Observable {
-    constructor(rx) {
-        super();
-        this._subj = new Rx.BehaviorSubject();
-        this._rx = rx;
-        if (!this._rx.distinctUntilChanged) {
-            console.trace('no distinct', rx);
-        }
-    }
-
-    id() {
-        return 'rxjs-' + this._id;
-    }
-
-    deref() {
-        if (!this._subscription) {
-            this._subscription = this._rx
-                .distinctUntilChanged(a => a, (a, b) => a === b)
-                .doOnNext(() => {
-                    this._notifyObservers();
-                })
-                .subscribe(this._subj);
-        }
-        const value = this._subj.getValue();
-        return value;
-    }
-
-    map(f) {
-        return makeReaction(() => f(this.deref()));
-    }
-
-    dispose() {
-        super.dispose();
-        this._subscription.dispose();
-        delete this._subscription;
-    }
-
-}
-
 export function makeRxReaction(rx) {
     return new RxReaction(rx);
+}
+
+export function makeCursor(atom, path) {
+    return new Cursor(atom, path);
 }
 
 export function deref(observable, transform) {

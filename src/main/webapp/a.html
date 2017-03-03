@@ -29,14 +29,38 @@
     console.log('r2', r2.deref());
     console.log('r3', r3.deref());
 
+    const Input = reframe.view('Input', function (label, cursor) {
+        return React.DOM.div({},
+                React.DOM.div({}, cursor.deref()),
+            React.DOM.label({}, label,
+                React.DOM.input({
+                    value: cursor.deref(),
+                    onChange: (e) => cursor.reset(e.target.value)
+                })));
+    })
+
     const Component = reframe.view('Component', function (rvalue, dep) {
         return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep));
     });
 
-    const App = reframe.view('App', function () {
-        const value = reframe.subscribe(['value']);
-        const dep = reframe.subscribe(['value-deprecated']);
-        return React.DOM.div({}, 'App ', value.deref(), ' ', this.derefSub(['value-deprecated']), Component(value, dep));
+    const App = reframe.view('App', {
+        getInitialState() {
+          return {
+              form: reframe.atom(Immutable.Map({value:'value'}))
+          }
+        },
+        render () {
+            const value = reframe.subscribe(['value']);
+            const dep = reframe.subscribe(['value-deprecated']);
+            return React.DOM.div({},
+                'App ', value.deref(), ' ',
+                this.derefSub(['value-deprecated']),
+                Component(value, dep),
+                this.state.form.id(),
+                JSON.stringify(this.state.form.deref().toJS()),
+                Input('value', reframe.cursor(this.state.form, ['value']))
+            );
+        }
     });
 
     const debug = reframe.when(reframe.isDebug, reframe.debug);
@@ -50,7 +74,7 @@
         return db.setIn(['value'], value);
     });
     reframe.regSub('value', (db) => db.get('value'));
-    reframe.registerSub('value-deprecated', (db) => db.get('value'));
+    reframe.registerSub('value-deprecated', (db$) => db$.map(db => db.get('value')));
     reframe.dispatchSync(['initialize']);
 
     ReactDOM.render(App(), document.querySelector('#app'))

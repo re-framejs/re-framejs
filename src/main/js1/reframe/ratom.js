@@ -121,6 +121,10 @@ class Atom extends Observable {
         return this._value;
     }
 
+    peekDerefedValue() {
+        return this._value;
+    }
+
     isChanged() {
         return this._changed;
     }
@@ -157,6 +161,10 @@ class Reaction extends Observable {
             this._run();
         }
         this._changed = false;
+        return this._state;
+    }
+
+    peekDerefedValue() {
         return this._state;
     }
 
@@ -202,6 +210,10 @@ class RxReaction extends Observable {
         return this._subj.getValue();
     }
 
+    peekDerefedValue() {
+        return this._subj.getValue();
+    }
+
     dispose() {
         super.dispose();
         this._subscription.dispose();
@@ -224,6 +236,10 @@ class Cursor extends Observable {
 
     dispose() {
         this._cursor.dispose();
+    }
+
+    peekDerefedValue() {
+        return this._cursor.peekDerefedValue();
     }
 
     reset(value) {

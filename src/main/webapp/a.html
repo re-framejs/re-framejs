@@ -31,13 +31,13 @@
 
     const Input = reframe.view('Input', function (label, cursor) {
         return React.DOM.div({},
-                React.DOM.div({}, cursor.deref()),
+            React.DOM.div({}, cursor.deref()),
             React.DOM.label({}, label,
                 React.DOM.input({
                     value: cursor.deref(),
                     onChange: (e) => cursor.reset(e.target.value)
                 })));
-    })
+    });
 
     const Component = reframe.view('Component', function (rvalue, dep) {
         return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep));
@@ -45,9 +45,9 @@
 
     const App = reframe.view('App', {
         getInitialState() {
-          return {
-              form: reframe.atom(Immutable.Map({value:'value'}))
-          }
+            return {
+                form: reframe.atom(Immutable.Map({value: 'value'}))
+            }
         },
         render () {
             const value = reframe.subscribe(['value']);

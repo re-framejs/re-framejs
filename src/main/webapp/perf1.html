@@ -61,7 +61,8 @@ jhah dasf asf
     //        return rx.map(db => db.getIn(['layout', y, x], Immutable.Map()));
     //    }
     //);
-    reframe.regSub('row', (db, [_, y]) => db.getIn(['layout', y]));
+    reframe.regSub('layout', (db) => db.getIn(['layout']));
+    reframe.regSub('row', ([_, y]) => [reframe.subscribe(['layout'])], ([layout], [_, y]) => layout.get(y));
     reframe.regSub('cell', ([_, y, x]) => [reframe.subscribe(['row', y])], ([row], [_, y, x]) => row.get(x));
 //    reframe.registerSub('cell', function (rx, cmd) {
 //        var y = cmd[1];

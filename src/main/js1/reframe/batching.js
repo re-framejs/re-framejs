@@ -68,6 +68,7 @@ class RenderQueue {
         // TODO ratom-flush
         if (this['componentQueue']) {
             runQueue(this['componentQueue']);
+            delete this['componentQueue'];
         }
         this.flushAfterRender();
     }

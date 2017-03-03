@@ -48,7 +48,7 @@ function cacheAndReturn(query, dynv, r) {
 }
 
 function cacheLookup(query, dynv = Immutable.List()) {
-    queryReaction.deref().get(makeCacheKey(query, dynv));
+    return queryReaction.deref().get(makeCacheKey(query, dynv));
 }
 
 export function subscribe(query, dynv = undefined) {

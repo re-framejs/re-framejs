@@ -29,18 +29,18 @@
     console.log('r2', r2.deref());
     console.log('r3', r3.deref());
 
-    const Input = reframe.view('Input', function (label, cursor) {
+    const Input = reframe.view('Input', function (label, cursor, hierarchy) {
         return React.DOM.div({},
             React.DOM.div({}, cursor.deref()),
             React.DOM.label({}, label,
                 React.DOM.input({
                     value: cursor.deref(),
                     onChange: (e) => cursor.reset(e.target.value)
-                })));
+                }), hierarchy));
     });
 
-    const Component = reframe.view('Component', function (rvalue, dep) {
-        return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep));
+    const Component = reframe.view('Component', function (rvalue, dep, hierarchy) {
+        return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep), hierarchy);
     });
 
     window.form = reframe.atom(Immutable.Map({value: 'value'}));
@@ -54,15 +54,16 @@
             if (this.derefSub(['stopped'])) {
                 return React.DOM.div();
             }
+            const hierarchy = reframe.subscribe(['hierarchy']).deref();
             const value = reframe.subscribe(['value']);
             const dep = reframe.subscribe(['value-deprecated']);
             return React.DOM.div({},
                 'App ', value.deref(), ' ',
                 this.derefSub(['value-deprecated']),
-                Component(value, dep),
+                Component(value, dep, hierarchy),
                 this.state.form.id(),
                 JSON.stringify(this.state.form.deref().toJS()),
-                Input('value', reframe.cursor(this.state.form, ['value']))
+                Input('value', reframe.cursor(this.state.form, ['value']), hierarchy)
             );
         }
     });
@@ -71,9 +72,11 @@
     reframe.regEventDb('initialize', [debug], (db) => {
         return db
             .setIn(['value'], 'value')
+            .setIn(['hierarchy'], 'hierarchy')
             .set('stop', false);
     });
     reframe.regEventDb('stop', (db) => db.set('stop', true));
+    reframe.regEventDb('hierarchy', (db, [_, value]) => db.set('hierarchy', value));
     reframe.regEventDb('change-value', [debug, reframe.trimv], (db, [value]) => {
         return db.setIn(['value'], value);
     });
@@ -81,6 +84,7 @@
         return db.setIn(['value'], value);
     });
     reframe.regSub('value', (db) => db.get('value'));
+    reframe.regSub('hierarchy', (db) => db.get('hierarchy'));
     reframe.regSub('stopped', (db) => db.get('stop'));
     reframe.registerSub('value-deprecated', (db$) => db$.map(db => db.get('value')));
     reframe.dispatchSync(['initialize']);

@@ -60,8 +60,9 @@ function guid() {
 }
 
 class MyDeref extends (ratom.Observable) {
-    constructor(renderCycle, observable) {
+    constructor(component, renderCycle, observable) {
         super('de');
+        this._componentId = component.id();
         this._renderCycle = renderCycle;
         this._observable = observable;
         this._lastValue = observable.peekValue();
@@ -106,7 +107,7 @@ export let SubscriptionMixin = {
     },
     observe: function (watch) {
         if (!this.state.watching.has(watch)) {
-            const deref = new MyDeref(this.state.renderCycle, watch);
+            const deref = new MyDeref(this, this.state.renderCycle, watch);
             this.state.watching.add(deref);
             watch.subscribe(deref);
             deref.subscribe(this);
@@ -140,7 +141,10 @@ export let SubscriptionMixin = {
         return ratom.deref(rx, aTransform);
     },
     unsubscribe: function () {
-        this.state.watching.forEach(watch => watch.dispose());
+        this.state.watching.forEach(watch => {
+            watch.unsubscribe(this);
+            watch.dispose()
+        });
     },
     componentWillUpdate: function () {
         // console.log('Rendering', this.getDisplayName());

@@ -28,7 +28,7 @@
     console.log('r1', r1.deref());
     console.log('r2', r2.deref());
     console.log('r3', r3.deref());
-
+    reframe.toggleReactDebug(true)
     const Input = reframe.view('Input', function (label, cursor, hierarchy) {
         return React.DOM.div({},
             React.DOM.div({}, cursor.deref()),
@@ -40,7 +40,8 @@
     });
 
     const Component = reframe.view('Component', function (rvalue, dep, hierarchy) {
-        return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep), hierarchy);
+//        return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep), hierarchy);
+        return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', hierarchy);
     });
 
     window.form = reframe.atom(Immutable.Map({value: 'value'}));
@@ -54,7 +55,7 @@
             if (this.derefSub(['stopped'])) {
                 return React.DOM.div();
             }
-            const hierarchy = reframe.subscribe(['hierarchy']).deref();
+            const hierarchy = 'h';//reframe.subscribe(['hierarchy']).deref();
             const value = reframe.subscribe(['value']);
             const dep = reframe.subscribe(['value-deprecated']);
             return React.DOM.div({},

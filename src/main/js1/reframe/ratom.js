@@ -145,7 +145,6 @@ class Reaction extends Observable {
         super('rx');
         this._f = f;
         this._dirty = true;
-        this._changed = true;
     }
 
     _run() {
@@ -158,7 +157,6 @@ class Reaction extends Observable {
             this._run();
         }
         watchInCtx(this);
-        this._changed = false;
         return this._state;
     }
 
@@ -171,12 +169,13 @@ class Reaction extends Observable {
     }
 
     notify() {
-        this._dirty = true;
-        const oldState = this._state;
-        this._run();
-        this._changed = oldState !== this._state;
-        if (oldState !== this._state) {
-            this._notifyObservers();
+        if (!this._dirty) {
+            this._dirty = true;
+            const oldState = this._state;
+            this._run();
+            if (oldState !== this._state) {
+                this._notifyObservers();
+            }
         }
     }
 

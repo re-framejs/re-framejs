@@ -1,5 +1,21 @@
 'use strict';
-import {isImmutable, isPrimitive} from 'reframe/utils';
+import {isImmutable, isPrimitive, isObservable} from 'reframe/utils';
+
+function isChanged(entries) {
+    return !entries.every(function ([value, nextValue]) {
+        if (isObservable(value) || isObservable(nextValue)) {
+            return true;
+        }
+
+        if ((isPrimitive(value) && isPrimitive(nextValue))
+            ||
+            (isImmutable(value) && isImmutable(nextValue))) {
+
+            return value === nextValue;
+        }
+        return false;
+    });
+}
 
 /**
  * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
@@ -24,15 +40,7 @@ export function shouldUpdate(props, nextProps, ignore) {
     }
 
     if (entries.length) {
-        return !entries.every(function ([value, nextValue]) {
-            if ((isPrimitive(value) && isPrimitive(nextValue))
-                ||
-                (isImmutable(value) && isImmutable(nextValue))) {
-
-                return value === nextValue;
-            }
-            return false;
-        });
+       return isChanged(entries);
     }
     return false;
 }

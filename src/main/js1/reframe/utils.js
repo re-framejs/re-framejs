@@ -1,4 +1,6 @@
 import * as Immutable from 'immutable';
+import {Observable} from 'reframe/ratom';
+import * as Rx from 'rx';
 
 export function isImmutable(maybeImmutable) {
     return Immutable.Iterable.isIterable(maybeImmutable);
@@ -15,4 +17,8 @@ export function isFunction(obj) {
 
 export function isObject(obj) {
     return typeof obj === 'object';
+}
+
+export function isObservable(obj) {
+    return obj instanceof Observable || obj instanceof Rx.Observable;
 }

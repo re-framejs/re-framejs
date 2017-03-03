@@ -44,11 +44,11 @@ jhah dasf asf
             };
         }
     }
-    reframe.registerHandler('initDb', function (db) {
+    reframe.regEventDb('initDb', function (db) {
         return Immutable.fromJS({layout: layout});
     })
     ;
-    reframe.registerHandler('update', function (db, cmd) {
+    reframe.regEventDb('update', function (db, cmd) {
         var y = cmd[1];
         var x = cmd[2];
         return db.updateIn(['layout', y, x, 'active'], function (active) {
@@ -61,11 +61,13 @@ jhah dasf asf
     //        return rx.map(db => db.getIn(['layout', y, x], Immutable.Map()));
     //    }
     //);
-    reframe.registerSub('cell', function (rx, cmd) {
-        var y = cmd[1];
-        var x = cmd[2];
-        return reframe.indexPath(['layout', y, x]);
-    });
+    reframe.regSub('row', (db, [_, y]) => db.getIn(['layout', y]));
+    reframe.regSub('cell', ([_, y, x]) => [reframe.subscribe(['row', y])], ([row], [_, y, x]) => row.get(x));
+//    reframe.registerSub('cell', function (rx, cmd) {
+//        var y = cmd[1];
+//        var x = cmd[2];
+//        return reframe.indexPath(['layout', y, x]);
+//    });
 
     reframe.dispatchSync(['initDb']);
 

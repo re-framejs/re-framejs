@@ -47,6 +47,18 @@ export let StatelessMixin = {
     },
     getDisplayName: function () {
         return this.constructor.displayName;
+    },
+    traceReact(message) {
+        if (isTraceReact()) {
+            console.debug(message, this.getDisplayName(), {
+                order: this.state.renderOrder,
+                render: this.state.renderCycle,
+                props: this.props, state: this.state
+            });
+        }
+    },
+    id() {
+        return this.getDisplayName();
     }
 };
 

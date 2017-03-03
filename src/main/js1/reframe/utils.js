@@ -3,7 +3,7 @@ import {Observable} from 'reframe/ratom';
 import * as Rx from 'rx';
 
 export function isImmutable(maybeImmutable) {
-    return Immutable.Iterable.isIterable(maybeImmutable);
+    return maybeImmutable instanceof Immutable.Iterable;
 }
 
 export function isPrimitive(value) {

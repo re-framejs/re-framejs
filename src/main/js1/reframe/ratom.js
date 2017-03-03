@@ -95,8 +95,8 @@ class Atom extends Observable {
 
     _valueChanged(changed) {
         if (changed) {
-            this._subject.onNext(this._value);
             this._notifyObservers();
+            this._subject.onNext(this._value);
         }
     }
 
@@ -131,7 +131,7 @@ class Atom extends Observable {
 class Ratom extends Atom {
     constructor(value) {
         super(value);
-        this._type ='ra';
+        this._type = 'ra';
     }
 
     deref() {
@@ -205,6 +205,7 @@ class RxReaction extends Observable {
                 })
                 .subscribe(this._subj);
         }
+        watchInCtx(this);
         return this._subj.getValue();
     }
 
@@ -218,8 +219,10 @@ class RxReaction extends Observable {
 
     dispose() {
         super.dispose();
-        this._subscription.dispose();
-        delete this._subscription;
+        if (this._subscription) {
+            this._subscription.dispose();
+            delete this._subscription;
+        }
     }
 
 }

@@ -94,10 +94,10 @@ function derefInputSignals(signals, queryId) {
     if (Array.isArray(signals)) {
         return signals.map(v => v.deref());
     }
-    else if (Immutable.Map.isMap(signals)) {
+    else if (signals instanceof Immutable.Map) {
         return signals.map(v => v.deref());
     }
-    else if (Immutable.Seq.isSeq(signals)) {
+    else if (signals instanceof Immutable.Seq) {
         return signals.map(v => v.deref());
     }
     else if (signals && signals.deref) {

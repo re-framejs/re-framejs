@@ -43,13 +43,17 @@
         return React.DOM.div({}, 'Component ', rvalue.deref(), ' ', this.deref(dep));
     });
 
+    window.form = reframe.atom(Immutable.Map({value: 'value'}));
     const App = reframe.view('App', {
         getInitialState() {
             return {
-                form: reframe.atom(Immutable.Map({value: 'value'}))
+                form: window.form
             }
         },
         render () {
+            if (this.derefSub(['stopped'])) {
+                return React.DOM.div();
+            }
             const value = reframe.subscribe(['value']);
             const dep = reframe.subscribe(['value-deprecated']);
             return React.DOM.div({},
@@ -65,8 +69,11 @@
 
     const debug = reframe.when(reframe.isDebug, reframe.debug);
     reframe.regEventDb('initialize', [debug], (db) => {
-        return db.setIn(['value'], 'value');
+        return db
+            .setIn(['value'], 'value')
+            .set('stop', false);
     });
+    reframe.regEventDb('stop', (db) => db.set('stop', true));
     reframe.regEventDb('change-value', [debug, reframe.trimv], (db, [value]) => {
         return db.setIn(['value'], value);
     });
@@ -74,6 +81,7 @@
         return db.setIn(['value'], value);
     });
     reframe.regSub('value', (db) => db.get('value'));
+    reframe.regSub('stopped', (db) => db.get('stop'));
     reframe.registerSub('value-deprecated', (db$) => db$.map(db => db.get('value')));
     reframe.dispatchSync(['initialize']);
 

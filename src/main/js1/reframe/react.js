@@ -64,6 +64,11 @@ class MyDeref extends (ratom.Observable) {
         super('de');
         this._renderCycle = renderCycle;
         this._observable = observable;
+        this._lastValue = observable.peekValue();
+    }
+
+    notify() {
+        this._notifyObservers();
     }
 
     shouldDispose(renderCycle) {
@@ -72,16 +77,15 @@ class MyDeref extends (ratom.Observable) {
 
     dispose() {
         super.dispose();
-        this._watch.dispose();
+        this._observable.dispose();
     }
 
     deref() {
-        this._lastValue = this._observable.deref();
         return this._lastValue;
     }
 
     shouldUpdate() {
-        return this._lastValue !== this._observable.peekDerefedValue();
+        return this._observable.isChanged(this._lastValue);
     }
 }
 
@@ -101,7 +105,16 @@ export let SubscriptionMixin = {
         };
     },
     observe: function (watch) {
-        this.state.watching.add(new MyDeref(this.state.renderCycle, watch));
+        if (!this.state.watching.has(watch)) {
+            const deref = new MyDeref(this.state.renderCycle, watch);
+            this.state.watching.add(deref);
+            watch.subscribe(deref);
+            deref.subscribe(this);
+            watch.unsubscribe(this);
+        }
+    },
+    id() {
+        return this.getDisplayName();
     },
     // unobserve: function(observable) {
     //     this.state.watching.delete(observable);
@@ -111,7 +124,6 @@ export let SubscriptionMixin = {
         batching.queueRender(this);
     },
     tryForceUpdate: function () {
-        this.traceReact('try Force update');
         if (shouldUpdateByDerefed(this.state.watching)) {
             this.traceReact('Force update');
             // console.log('Force update', obj.getDisplayName());
@@ -133,13 +145,15 @@ export let SubscriptionMixin = {
     componentWillUpdate: function () {
         // console.log('Rendering', this.getDisplayName());
         this.state.renderCycle++;
-        //this.unsubscribe();
+        this.unsubscribe();
     },
     componentDidUpdate: function () {
         for (let watch of this.state.watching) {
+            // console.log(watch._observable.id(), this.state.renderCycle, watch.shouldDispose(this.state.renderCycle), watch);
             if (watch.shouldDispose(this.state.renderCycle)) {
-                // watch.dispose();
                 this.state.watching.delete(watch);
+                watch.unsubscribe(this);
+                watch.dispose();
             }
         }
     },

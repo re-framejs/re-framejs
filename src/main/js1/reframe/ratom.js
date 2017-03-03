@@ -86,7 +86,6 @@ class Atom extends Observable {
     constructor(value) {
         super('a');
         this._value = value;
-        this._changed = true;
         this._subject = new Rx.BehaviorSubject(value);
     }
 
@@ -94,40 +93,39 @@ class Atom extends Observable {
         return this._subject;
     }
 
-    _valueChanged() {
-        if (this._changed) {
+    _valueChanged(changed) {
+        if (changed) {
             this._subject.onNext(this._value);
             this._notifyObservers();
         }
     }
 
     reset(value) {
-        this._changed = this._value !== value;
+        const oldValue = this._value;
         this._value = value;
-        this._valueChanged();
+        this._valueChanged(this._value !== oldValue);
         return this._value;
     }
 
     swap(f, ...args) {
         const oldValue = this._value;
         this._value = f(this._value, args);
-        this._changed = this._value !== oldValue;
-        this._valueChanged();
+        this._valueChanged(this._value !== oldValue);
         return this._value;
     }
 
     deref() {
-        this._changed = false;
         return this._value;
     }
 
-    peekDerefedValue() {
+    isChanged(value) {
+        return this._value !== value;
+    }
+
+    peekValue() {
         return this._value;
     }
 
-    isChanged() {
-        return this._changed;
-    }
 }
 
 class Ratom extends Atom {
@@ -156,15 +154,19 @@ class Reaction extends Observable {
     }
 
     deref() {
-        watchInCtx(this);
         if (this._dirty) {
             this._run();
         }
+        watchInCtx(this);
         this._changed = false;
         return this._state;
     }
 
-    peekDerefedValue() {
+    isChanged(value) {
+        return this._state !== value;
+    }
+
+    peekValue() {
         return this._state;
     }
 
@@ -176,10 +178,6 @@ class Reaction extends Observable {
         if (oldState !== this._state) {
             this._notifyObservers();
         }
-    }
-
-    isChanged() {
-        return this._changed;
     }
 
     dispose() {
@@ -210,7 +208,11 @@ class RxReaction extends Observable {
         return this._subj.getValue();
     }
 
-    peekDerefedValue() {
+    isChanged(value) {
+        return this._subj.getValue() !== value;
+    }
+
+    peekValue() {
         return this._subj.getValue();
     }
 
@@ -238,8 +240,8 @@ class Cursor extends Observable {
         this._cursor.dispose();
     }
 
-    peekDerefedValue() {
-        return this._cursor.peekDerefedValue();
+    isChanged(value) {
+        return this._cursor.isChanged(value);
     }
 
     reset(value) {

@@ -120,7 +120,9 @@ class Fsm {
     }
 
     _runNextTick() {
-        nextTick(() => this.trigger("run-queue", null));
+        nextTick(function runProcessEvents() {
+            return this.trigger("run-queue", null);
+        }.bind(this));
     }
 
     _runQueue() {

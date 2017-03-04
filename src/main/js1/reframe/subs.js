@@ -7,7 +7,7 @@ import {reagentId} from 'reframe/interop';
 
 export const kind = 'sub';
 
-let queryReaction = makeAtom(Immutable.Map());
+const queryReaction = makeAtom(Immutable.Map());
 
 /**
  * Runs on-dispose for all subscriptions we have in the subscription cache.

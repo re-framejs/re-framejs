@@ -169,13 +169,11 @@ class Reaction extends Observable {
     }
 
     notify() {
-        if (!this._dirty) {
-            this._dirty = true;
-            const oldState = this._state;
-            this._run();
-            if (oldState !== this._state) {
-                this._notifyObservers();
-            }
+        this._dirty = true;
+        const oldState = this._state;
+        this._run();
+        if (oldState !== this._state) {
+            this._notifyObservers();
         }
     }
 

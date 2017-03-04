@@ -161,7 +161,7 @@ export let SubscriptionMixin = {
     componentWillUpdate: function () {
         // console.log('Rendering', this.getDisplayName());
         this.state.renderCycle++;
-        this.unsubscribe();
+        // this.unsubscribe();
     },
     componentDidUpdate: function () {
         for (let watch of this.state.watching) {

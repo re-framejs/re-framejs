@@ -10,6 +10,9 @@ import * as registrar from 'reframe/registrar';
 import * as router from 'reframe/router';
 import * as stdinterceptors from 'reframe/stdinterceptors';
 import * as subs from 'reframe/subs';
+import * as _form from 'reframe/form/core';
+
+export const form = _form;
 
 export function toggleDebug(value = undefined) {
     interop.toggleLog('debug', value);

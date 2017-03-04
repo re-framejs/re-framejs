@@ -1,4 +1,3 @@
-
 export function nextTick(f) {
     if (requestAnimationFrame) {
         requestAnimationFrame(f);
@@ -38,7 +37,9 @@ class RenderQueue {
     schedule() {
         if (!this._isScheduled) {
             this._isScheduled = true;
-            nextTick(() => this.runQueues());
+            nextTick(function runRenderQueue() {
+                return this.runQueues();
+            }.bind(this));
         }
     }
 

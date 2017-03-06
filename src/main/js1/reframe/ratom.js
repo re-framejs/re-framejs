@@ -36,6 +36,9 @@ export class Observable {
     }
 
     subscribe(observer) {
+        if (!observer.notify) {
+            console.warn(observer, observer && observer.id && observer.id(), 'has no callback notify');
+        }
         this._observers.add(observer);
         if (observer.observe) {
             observer.observe(this);
@@ -169,12 +172,12 @@ class Reaction extends Observable {
     }
 
     notify() {
-            this._dirty = true;
-            const oldState = this._state;
-            this._run();
-            if (oldState !== this._state) {
-                this._notifyObservers();
-            }
+        this._dirty = true;
+        const oldState = this._state;
+        this._run();
+        if (oldState !== this._state) {
+            this._notifyObservers();
+        }
     }
 
     dispose() {
@@ -186,7 +189,8 @@ class Reaction extends Observable {
 class RxReaction extends Observable {
     constructor(rx) {
         super('rxjs');
-        this._subj = new Rx.BehaviorSubject();
+        // this._subj = new Rx.BehaviorSubject();
+        this._value = undefined;
         this._rx = rx;
         if (!this._rx.distinctUntilChanged) {
             console.trace('no distinct', rx);
@@ -197,21 +201,22 @@ class RxReaction extends Observable {
         if (!this._subscription) {
             this._subscription = this._rx
                 .distinctUntilChanged(a => a, (a, b) => a === b)
-                .doOnNext(() => {
+                .subscribe((v) => {
+                this._value = v;
                     this._notifyObservers();
-                })
-                .subscribe(this._subj);
+                    // this._subj.onNext(v)
+                });
         }
         watchInCtx(this);
-        return this._subj.getValue();
+        return this._value;//this._subj.getValue();
     }
 
     isChanged(value) {
-        return this._subj.getValue() !== value;
+        return this._value !== value;
     }
 
     peekValue() {
-        return this._subj.getValue();
+        return this._value;
     }
 
     dispose() {

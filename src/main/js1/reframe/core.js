@@ -139,7 +139,7 @@ export const view = react.viewSV;
 
 // deprecated
 import {Index} from 'reframe/subindex.js';
-let index = new Index(()=>appDb.subject());
+let index = new Index(()=>subs.requestAnimationFrame$);
 export function indexPath(path, def) {
     return index.sub(path, def);
 }

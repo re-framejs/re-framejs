@@ -10,7 +10,11 @@ function runQueue(components) {
     const s = [...new Set(components)];
     s.sort((o1, o2) => o1.state.renderOrder - o2.state.renderOrder);
 
-    s.forEach((component) => component.tryForceUpdate());
+    s.forEach((component) => {
+        if (!component.__reframe_rendered) {
+            component.tryForceUpdate();
+        }
+    });
 }
 class RenderQueue {
     constructor() {
@@ -89,6 +93,7 @@ export function flushAfterRender() {
 }
 
 export function queueRender(component) {
+    component.__reframe_rendered = false;
     renderQueue.queueRender(component);
 }
 
@@ -102,4 +107,8 @@ export function doAfterRender(f) {
 
 export function schedule() {
     renderQueue.schedule();
+}
+
+export function markRendered(component) {
+    component.__reframe_rendered = true;
 }

@@ -65,6 +65,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.isDebug = isDebug;
 	exports.atom = atom;
 	exports.reaction = reaction;
+	exports.cursor = cursor;
 	exports.regSubRaw = regSubRaw;
 	exports.clearSub = clearSub;
 	exports.clearFx = clearFx;
@@ -104,7 +105,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _ratom = __webpack_require__(6);
 	
-	var _react = __webpack_require__(13);
+	var _react = __webpack_require__(14);
 	
 	var react = _interopRequireWildcard(_react);
 	
@@ -120,13 +121,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var stdinterceptors = _interopRequireWildcard(_stdinterceptors);
 	
-	var _subs = __webpack_require__(14);
+	var _subs = __webpack_require__(13);
 	
 	var subs = _interopRequireWildcard(_subs);
 	
 	var _subindex = __webpack_require__(23);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	// import * as _form from 'reframe/form/core';
+	//
+	// export const form = _form;
 	
 	function toggleDebug() {
 	    var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
@@ -150,6 +155,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function reaction(f) {
 	    return (0, _ratom.makeReaction)(f);
+	}
+	
+	function cursor(atom, path) {
+	    return (0, _ratom.makeCursor)(atom, path);
 	}
 	
 	var appDb = exports.appDb = db.appDb;
@@ -253,7 +262,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// deprecated
 	
 	var index = new _subindex.Index(function () {
-	    return appDb.subject();
+	    return subs.requestAnimationFrame$;
 	});
 	function indexPath(path, def) {
 	    return index.sub(path, def);
@@ -560,7 +569,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.db$ = undefined;
+	exports.Observable = exports.db$ = undefined;
 	
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 	
@@ -571,6 +580,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.makeAtom = makeAtom;
 	exports.makeRatom = makeRatom;
 	exports.makeRxReaction = makeRxReaction;
+	exports.makeCursor = makeCursor;
+	exports.pluck = pluck;
 	exports.deref = deref;
 	
 	var _immutable = __webpack_require__(3);
@@ -609,18 +620,28 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	}
 	
-	var Observable = function () {
-	    function Observable() {
+	var Observable = exports.Observable = function () {
+	    function Observable(type) {
 	        _classCallCheck(this, Observable);
 	
+	        this._type = type;
+	        this._id = id++;
 	        this._observers = new Set();
 	        this._observables = new Set();
 	        this._onDispose = new Set();
 	    }
 	
 	    _createClass(Observable, [{
+	        key: 'id',
+	        value: function id() {
+	            return this._type + '-' + this._id;
+	        }
+	    }, {
 	        key: 'subscribe',
 	        value: function subscribe(observer) {
+	            if (!observer.notify) {
+	                console.warn(observer, observer && observer.id && observer.id(), 'has no callback notify');
+	            }
 	            this._observers.add(observer);
 	            if (observer.observe) {
 	                observer.observe(this);
@@ -673,6 +694,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	                });
 	            }
 	        }
+	    }, {
+	        key: 'map',
+	        value: function map(f) {
+	            var _this2 = this;
+	
+	            return makeReaction(function () {
+	                return f(_this2.deref());
+	            });
+	        }
 	    }]);
 	
 	    return Observable;
@@ -684,13 +714,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function Atom(value) {
 	        _classCallCheck(this, Atom);
 	
-	        var _this2 = _possibleConstructorReturn(this, (Atom.__proto__ || Object.getPrototypeOf(Atom)).call(this));
+	        var _this3 = _possibleConstructorReturn(this, (Atom.__proto__ || Object.getPrototypeOf(Atom)).call(this, 'a'));
 	
-	        _this2._value = value;
-	        _this2._id = id++;
-	        _this2._changed = true;
-	        _this2._subject = new Rx.BehaviorSubject(value);
-	        return _this2;
+	        _this3._value = value;
+	        _this3._subject = new Rx.BehaviorSubject(value);
+	        return _this3;
 	    }
 	
 	    _createClass(Atom, [{
@@ -700,18 +728,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    }, {
 	        key: '_valueChanged',
-	        value: function _valueChanged() {
-	            if (this._changed) {
-	                this._subject.onNext(this._value);
+	        value: function _valueChanged(changed) {
+	            if (changed) {
 	                this._notifyObservers();
+	                this._subject.onNext(this._value);
 	            }
 	        }
 	    }, {
 	        key: 'reset',
 	        value: function reset(value) {
-	            this._changed = this._value !== value;
+	            var oldValue = this._value;
 	            this._value = value;
-	            this._valueChanged();
+	            this._valueChanged(this._value !== oldValue);
 	            return this._value;
 	        }
 	    }, {
@@ -724,34 +752,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	
 	            this._value = f(this._value, args);
-	            this._changed = this._value !== oldValue;
-	            this._valueChanged();
+	            this._valueChanged(this._value !== oldValue);
 	            return this._value;
 	        }
 	    }, {
 	        key: 'deref',
 	        value: function deref() {
-	            this._changed = false;
 	            return this._value;
 	        }
 	    }, {
-	        key: 'map',
-	        value: function map(f) {
-	            var _this3 = this;
-	
-	            return makeReaction(function () {
-	                return f(_this3.deref());
-	            });
-	        }
-	    }, {
 	        key: 'isChanged',
-	        value: function isChanged() {
-	            return this._changed;
+	        value: function isChanged(value) {
+	            return this._value !== value;
 	        }
 	    }, {
-	        key: 'id',
-	        value: function id() {
-	            return 'a-' + this._id;
+	        key: 'peekValue',
+	        value: function peekValue() {
+	            return this._value;
 	        }
 	    }]);
 	
@@ -764,7 +781,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function Ratom(value) {
 	        _classCallCheck(this, Ratom);
 	
-	        return _possibleConstructorReturn(this, (Ratom.__proto__ || Object.getPrototypeOf(Ratom)).call(this, value));
+	        var _this4 = _possibleConstructorReturn(this, (Ratom.__proto__ || Object.getPrototypeOf(Ratom)).call(this, value));
+	
+	        _this4._type = 'ra';
+	        return _this4;
 	    }
 	
 	    _createClass(Ratom, [{
@@ -784,21 +804,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function Reaction(f) {
 	        _classCallCheck(this, Reaction);
 	
-	        var _this5 = _possibleConstructorReturn(this, (Reaction.__proto__ || Object.getPrototypeOf(Reaction)).call(this));
+	        var _this5 = _possibleConstructorReturn(this, (Reaction.__proto__ || Object.getPrototypeOf(Reaction)).call(this, 'rx'));
 	
 	        _this5._f = f;
 	        _this5._dirty = true;
-	        _this5._id = id++;
-	        _this5._changed = true;
 	        return _this5;
 	    }
 	
 	    _createClass(Reaction, [{
-	        key: 'id',
-	        value: function id() {
-	            return 'rx-' + this._id;
-	        }
-	    }, {
 	        key: '_run',
 	        value: function _run() {
 	            this._state = runInCtx(this, this._f);
@@ -807,11 +820,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'deref',
 	        value: function deref() {
-	            watchInCtx(this);
 	            if (this._dirty) {
 	                this._run();
 	            }
-	            this._changed = false;
+	            watchInCtx(this);
+	            return this._state;
+	        }
+	    }, {
+	        key: 'isChanged',
+	        value: function isChanged(value) {
+	            return this._state !== value;
+	        }
+	    }, {
+	        key: 'peekValue',
+	        value: function peekValue() {
 	            return this._state;
 	        }
 	    }, {
@@ -820,24 +842,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this._dirty = true;
 	            var oldState = this._state;
 	            this._run();
-	            this._changed = oldState !== this._state;
 	            if (oldState !== this._state) {
 	                this._notifyObservers();
 	            }
-	        }
-	    }, {
-	        key: 'map',
-	        value: function map(f) {
-	            var _this6 = this;
-	
-	            return makeReaction(function () {
-	                return f(_this6.deref());
-	            });
-	        }
-	    }, {
-	        key: 'isChanged',
-	        value: function isChanged() {
-	            return this._changed;
 	        }
 	    }, {
 	        key: 'dispose',
@@ -848,6 +855,126 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }]);
 	
 	    return Reaction;
+	}(Observable);
+	
+	var RxReaction = function (_Observable3) {
+	    _inherits(RxReaction, _Observable3);
+	
+	    function RxReaction(rx) {
+	        _classCallCheck(this, RxReaction);
+	
+	        // this._subj = new Rx.BehaviorSubject();
+	        var _this6 = _possibleConstructorReturn(this, (RxReaction.__proto__ || Object.getPrototypeOf(RxReaction)).call(this, 'rxjs'));
+	
+	        _this6._value = undefined;
+	        _this6._rx = rx;
+	        if (!_this6._rx.distinctUntilChanged) {
+	            console.trace('no distinct', rx);
+	        }
+	        return _this6;
+	    }
+	
+	    _createClass(RxReaction, [{
+	        key: 'deref',
+	        value: function deref() {
+	            var _this7 = this;
+	
+	            if (!this._subscription) {
+	                this._subscription = this._rx.distinctUntilChanged(function (a) {
+	                    return a;
+	                }, function (a, b) {
+	                    return a === b;
+	                }).subscribe(function (v) {
+	                    _this7._value = v;
+	                    _this7._notifyObservers();
+	                    // this._subj.onNext(v)
+	                });
+	            }
+	            watchInCtx(this);
+	            return this._value; //this._subj.getValue();
+	        }
+	    }, {
+	        key: 'isChanged',
+	        value: function isChanged(value) {
+	            return this._value !== value;
+	        }
+	    }, {
+	        key: 'peekValue',
+	        value: function peekValue() {
+	            return this._value;
+	        }
+	    }, {
+	        key: 'dispose',
+	        value: function dispose() {
+	            _get(RxReaction.prototype.__proto__ || Object.getPrototypeOf(RxReaction.prototype), 'dispose', this).call(this);
+	            if (this._observers.size === 0 && this._subscription) {
+	                this._subscription.dispose();
+	                delete this._subscription;
+	            }
+	        }
+	    }]);
+	
+	    return RxReaction;
+	}(Observable);
+	
+	var Cursor = function (_Observable4) {
+	    _inherits(Cursor, _Observable4);
+	
+	    function Cursor(atom, path) {
+	        _classCallCheck(this, Cursor);
+	
+	        var _this8 = _possibleConstructorReturn(this, (Cursor.__proto__ || Object.getPrototypeOf(Cursor)).call(this, 'cu'));
+	
+	        _this8._atom = atom;
+	        _this8._cursor = atom.map(function () {
+	            return atom.deref().getIn(path);
+	        });
+	        _this8._path = path;
+	        return _this8;
+	    }
+	
+	    _createClass(Cursor, [{
+	        key: 'deref',
+	        value: function deref() {
+	            return this._cursor.deref();
+	        }
+	    }, {
+	        key: 'dispose',
+	        value: function dispose() {
+	            this._cursor.dispose();
+	        }
+	    }, {
+	        key: 'isChanged',
+	        value: function isChanged(value) {
+	            return this._cursor.isChanged(value);
+	        }
+	    }, {
+	        key: 'reset',
+	        value: function reset(value) {
+	            var _this9 = this;
+	
+	            this._atom.swap(function (old) {
+	                return old.setIn(_this9._path, value);
+	            });
+	        }
+	    }, {
+	        key: 'swap',
+	        value: function swap(f) {
+	            var _this10 = this;
+	
+	            for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
+	                args[_key2 - 1] = arguments[_key2];
+	            }
+	
+	            this._atom.swap(function (old) {
+	                return old.updateIn(_this10._path, function (value) {
+	                    return f.apply(undefined, [value].concat(args));
+	                });
+	            });
+	        }
+	    }]);
+	
+	    return Cursor;
 	}(Observable);
 	
 	function makeReaction(f) {
@@ -862,67 +989,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return new Ratom(value);
 	}
 	
-	var RxReaction = function (_Observable3) {
-	    _inherits(RxReaction, _Observable3);
-	
-	    function RxReaction(rx) {
-	        _classCallCheck(this, RxReaction);
-	
-	        var _this7 = _possibleConstructorReturn(this, (RxReaction.__proto__ || Object.getPrototypeOf(RxReaction)).call(this));
-	
-	        _this7._subj = new Rx.BehaviorSubject();
-	        _this7._rx = rx;
-	        if (!_this7._rx.distinctUntilChanged) {
-	            console.trace('no distinct', rx);
-	        }
-	        return _this7;
-	    }
-	
-	    _createClass(RxReaction, [{
-	        key: 'id',
-	        value: function id() {
-	            return 'rxjs-' + this._id;
-	        }
-	    }, {
-	        key: 'deref',
-	        value: function deref() {
-	            var _this8 = this;
-	
-	            if (!this._subscription) {
-	                this._subscription = this._rx.distinctUntilChanged(function (a) {
-	                    return a;
-	                }, function (a, b) {
-	                    return a === b;
-	                }).doOnNext(function () {
-	                    _this8._notifyObservers();
-	                }).subscribe(this._subj);
-	            }
-	            var value = this._subj.getValue();
-	            return value;
-	        }
-	    }, {
-	        key: 'map',
-	        value: function map(f) {
-	            var _this9 = this;
-	
-	            return makeReaction(function () {
-	                return f(_this9.deref());
-	            });
-	        }
-	    }, {
-	        key: 'dispose',
-	        value: function dispose() {
-	            _get(RxReaction.prototype.__proto__ || Object.getPrototypeOf(RxReaction.prototype), 'dispose', this).call(this);
-	            this._subscription.dispose();
-	            delete this._subscription;
-	        }
-	    }]);
-	
-	    return RxReaction;
-	}(Observable);
-	
 	function makeRxReaction(rx) {
 	    return new RxReaction(rx);
+	}
+	
+	function makeCursor(atom, path) {
+	    return new Cursor(atom, path);
+	}
+	
+	function pluck(atom, path) {
+	    return atom.map(function (val) {
+	        return val && val.getIn(path);
+	    });
 	}
 	
 	function deref(observable, transform) {
@@ -1179,6 +1257,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _interop = __webpack_require__(11);
 	
+	var _subs = __webpack_require__(13);
+	
+	var _db = __webpack_require__(5);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
@@ -1235,8 +1317,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    fsm._exception(arg);
 	                }];
 	            } else if (state === 'running' && trigger === 'finish-run') {
-	                return fsm._queue.length === 0 ? ['idle'] : ['scheduled', function (fsm) {
-	                    return fsm._runNextTick();
+	                return fsm._queue.length === 0 ? ['idle', function () {
+	                    _subs.requestAnimationFrame$.onNext(_db.appDb.peekValue());
+	                }] : ['scheduled', function (fsm) {
+	                    _subs.requestAnimationFrame$.onNext(_db.appDb.peekValue());
+	                    fsm._runNextTick();
 	                }];
 	            }
 	            /**
@@ -1314,11 +1399,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_runNextTick',
 	        value: function _runNextTick() {
-	            var _this = this;
-	
-	            (0, _interop.nextTick)(function () {
-	                return _this.trigger("run-queue", null);
-	            });
+	            (0, _interop.nextTick)(function runProcessEvents() {
+	                return this.trigger("run-queue", null);
+	            }.bind(this));
 	        }
 	    }, {
 	        key: '_runQueue',
@@ -1338,19 +1421,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_pause',
 	        value: function _pause(laterFn) {
-	            var _this2 = this;
+	            var _this = this;
 	
 	            laterFn(function () {
-	                return _this2.trigger('resume', null);
+	                return _this.trigger('resume', null);
 	            });
 	        }
 	    }, {
 	        key: '_callPostEventCallbacks',
 	        value: function _callPostEventCallbacks(event) {
-	            var _this3 = this;
+	            var _this2 = this;
 	
 	            Object.keys(this._postEventCallbacks).forEach(function (key) {
-	                _this3._postEventCallbacks[key](event, [].concat(_toConsumableArray(_this3._queue)));
+	                _this2._postEventCallbacks[key](event, [].concat(_toConsumableArray(_this2._queue)));
 	            });
 	        }
 	    }, {
@@ -1419,6 +1502,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	function dispatchSync(event) {
 	    (0, _events.handle)(event);
 	    eventQueue._fsm._callPostEventCallbacks(event);
+	    _subs.requestAnimationFrame$.onNext(_db.appDb.peekValue());
 	}
 
 /***/ },
@@ -1505,6 +1589,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.doBeforeFlush = doBeforeFlush;
 	exports.doAfterRender = doAfterRender;
 	exports.schedule = schedule;
+	exports.markRendered = markRendered;
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
@@ -1525,7 +1610,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	
 	    s.forEach(function (component) {
-	        return component.tryForceUpdate();
+	        if (!component.__reframe_rendered) {
+	            component.tryForceUpdate();
+	        }
 	    });
 	}
 	
@@ -1560,13 +1647,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'schedule',
 	        value: function schedule() {
-	            var _this = this;
-	
 	            if (!this._isScheduled) {
 	                this._isScheduled = true;
-	                nextTick(function () {
-	                    return _this.runQueues();
-	                });
+	                nextTick(function runRenderQueue() {
+	                    return this.runQueues();
+	                }.bind(this));
 	            }
 	        }
 	    }, {
@@ -1602,6 +1687,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // TODO ratom-flush
 	            if (this['componentQueue']) {
 	                runQueue(this['componentQueue']);
+	                delete this['componentQueue'];
 	            }
 	            this.flushAfterRender();
 	        }
@@ -1624,6 +1710,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function queueRender(component) {
+	    component.__reframe_rendered = false;
 	    renderQueue.queueRender(component);
 	}
 	
@@ -1638,6 +1725,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	function schedule() {
 	    renderQueue.schedule();
 	}
+	
+	function markRendered(component) {
+	    component.__reframe_rendered = true;
+	}
 
 /***/ },
 /* 13 */
@@ -1648,349 +1739,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.SubscriptionMixin = exports.StatelessMixin = undefined;
-	
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-	
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-	
-	exports.render = render;
-	exports.viewP = viewP;
-	exports.viewV = viewV;
-	exports.viewSP = viewSP;
-	exports.viewSV = viewSV;
-	
-	var _subs = __webpack_require__(14);
-	
-	var subs = _interopRequireWildcard(_subs);
-	
-	var _react = __webpack_require__(15);
-	
-	var React = _interopRequireWildcard(_react);
-	
-	var _shouldupdate = __webpack_require__(16);
-	
-	var _ratom = __webpack_require__(6);
-	
-	var ratom = _interopRequireWildcard(_ratom);
-	
-	var _batching = __webpack_require__(12);
-	
-	var batching = _interopRequireWildcard(_batching);
-	
-	var _interop = __webpack_require__(11);
-	
-	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
-	
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	// export const pause$ = new Rx.BehaviorSubject(true);
-	
-	// export function deref(rx, transform) {
-	//     let ttransform = transform || (a => a);
-	//     let subj = new Rx.BehaviorSubject();
-	//     rx.map(ttransform).subscribe(subj).dispose();
-	//     return subj.getValue();
-	// }
-	
-	var data = {
-	    renderOrder: 0,
-	    toUpdate: []
-	};
-	
-	function shouldUpdateByDerefed(watching) {
-	    var _iteratorNormalCompletion = true;
-	    var _didIteratorError = false;
-	    var _iteratorError = undefined;
-	
-	    try {
-	        for (var _iterator = watching[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-	            var watch = _step.value;
-	
-	            if (watch.shouldUpdate()) {
-	                return true;
-	            }
-	        }
-	    } catch (err) {
-	        _didIteratorError = true;
-	        _iteratorError = err;
-	    } finally {
-	        try {
-	            if (!_iteratorNormalCompletion && _iterator.return) {
-	                _iterator.return();
-	            }
-	        } finally {
-	            if (_didIteratorError) {
-	                throw _iteratorError;
-	            }
-	        }
-	    }
-	
-	    return false;
-	}
-	
-	function render() {
-	    data.toUpdate.sort(function (_ref, _ref2) {
-	        var _ref4 = _slicedToArray(_ref, 1),
-	            o1 = _ref4[0];
-	
-	        var _ref3 = _slicedToArray(_ref2, 1),
-	            o2 = _ref3[0];
-	
-	        return o1 - o2;
-	    });
-	
-	    data.toUpdate.forEach(function (_ref5) {
-	        var _ref6 = _slicedToArray(_ref5, 2),
-	            _ = _ref6[0],
-	            forceUpdate = _ref6[1];
-	
-	        return forceUpdate();
-	    });
-	    data.toUpdate = [];
-	}
-	// subs.render$
-	//     .pausable(pause$)
-	//     .subscribe(render);
-	
-	var StatelessMixin = exports.StatelessMixin = {
-	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
-	        return (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.state, nextState) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv);
-	    },
-	    getDisplayName: function getDisplayName() {
-	        return this.constructor.displayName;
-	    }
-	};
-	
-	function S4() {
-	    return ((1 + Math.random()) * 0x10000 | 0).toString(16).substring(1);
-	}
-	
-	// Generate a pseudo-GUID by concatenating random hexadecimal.
-	function guid() {
-	    return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4();
-	}
-	
-	var MyDeref = function () {
-	    function MyDeref(renderCycle, watch) {
-	        _classCallCheck(this, MyDeref);
-	
-	        this._renderCycle = renderCycle;
-	        this._watch = watch;
-	    }
-	
-	    _createClass(MyDeref, [{
-	        key: 'shouldDispose',
-	        value: function shouldDispose(renderCycle) {
-	            return renderCycle > this._renderCycle;
-	        }
-	    }, {
-	        key: 'dispose',
-	        value: function dispose() {
-	            this._watch.dispose();
-	        }
-	    }, {
-	        key: 'shouldUpdate',
-	        value: function shouldUpdate() {
-	            return this._watch.isChanged();
-	        }
-	    }]);
-	
-	    return MyDeref;
-	}();
-	
-	var SubscriptionMixin = exports.SubscriptionMixin = {
-	    derefSub: function derefSub(subVec, transform) {
-	        return ratom.deref(subs.subscribe(subVec), transform);
-	    },
-	
-	    getDisplayName: function getDisplayName() {
-	        return this.constructor.displayName;
-	    },
-	    getInitialState: function getInitialState() {
-	        return {
-	            watching: new Set(),
-	            renderOrder: data.renderOrder++,
-	            renderCycle: 0
-	        };
-	    },
-	    observe: function observe(watch) {
-	        this.state.watching.add(new MyDeref(this.state.renderCycle, watch));
-	    },
-	    // unobserve: function(observable) {
-	    //     this.state.watching.delete(observable);
-	    // },
-	    notify: function notify(dispose) {
-	        this.traceReact('Notify');
-	        batching.queueRender(this);
-	    },
-	    tryForceUpdate: function tryForceUpdate() {
-	        if (shouldUpdateByDerefed(this.state.watching)) {
-	            this.traceReact('Force update');
-	            // console.log('Force update', obj.getDisplayName());
-	            this.forceUpdate();
-	        }
-	    },
-	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
-	        var updateByProps = (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv),
-	            updateByState = (0, _shouldupdate.shouldUpdate)(this.state, nextState, ['watching', 'renderOrder', 'renderCycle']);
-	
-	        return updateByProps || updateByState;
-	    },
-	    deref: function deref(rx, aTransform, aId) {
-	        return ratom.deref(rx, aTransform);
-	    },
-	    unsubscribe: function unsubscribe() {
-	        this.state.watching.forEach(function (watch) {
-	            return watch.dispose();
-	        });
-	    },
-	    componentWillUpdate: function componentWillUpdate() {
-	        // console.log('Rendering', this.getDisplayName());
-	        this.state.renderCycle++;
-	        //this.unsubscribe();
-	    },
-	    componentDidUpdate: function componentDidUpdate() {
-	        var _iteratorNormalCompletion2 = true;
-	        var _didIteratorError2 = false;
-	        var _iteratorError2 = undefined;
-	
-	        try {
-	            for (var _iterator2 = this.state.watching[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	                var watch = _step2.value;
-	
-	                if (watch.shouldDispose(this.state.renderCycle)) {
-	                    // watch.dispose();
-	                    this.state.watching.delete(watch);
-	                }
-	            }
-	        } catch (err) {
-	            _didIteratorError2 = true;
-	            _iteratorError2 = err;
-	        } finally {
-	            try {
-	                if (!_iteratorNormalCompletion2 && _iterator2.return) {
-	                    _iterator2.return();
-	                }
-	            } finally {
-	                if (_didIteratorError2) {
-	                    throw _iteratorError2;
-	                }
-	            }
-	        }
-	    },
-	    componentWillUnmount: function componentWillUnmount() {
-	        this.unsubscribe();
-	    },
-	    traceReact: function traceReact(message) {
-	        if ((0, _interop.isTraceReact)()) {
-	            console.debug(message, this.getDisplayName(), {
-	                order: this.state.renderOrder,
-	                render: this.state.renderCycle,
-	                props: this.props, state: this.state
-	            });
-	        }
-	    }
-	};
-	
-	function createComponentObj(mixins, args) {
-	    var componentObj = void 0;
-	    switch (args.length) {
-	        case 2:
-	            if (typeof args[1].prototype === 'undefined') {
-	                args[1].mixins = mixins;
-	                componentObj = args[1];
-	            } else {
-	                componentObj = {
-	                    mixins: mixins,
-	                    render: args[1]
-	                };
-	            }
-	            break;
-	        case 3:
-	            if (typeof args[2].prototype === 'undefined') {
-	                // it's an object
-	                args[2].mixins = mixins.concat(args[1]);
-	                componentObj = args[2];
-	            } else {
-	                // it's a render function
-	                componentObj = {
-	                    mixins: mixins.concat(args[1]),
-	                    render: args[2]
-	                };
-	            }
-	            break;
-	        default:
-	            throw new Error('Expected 2 or 3 arguments, got ' + args.length);
-	    }
-	    componentObj.displayName = args[0];
-	    return componentObj;
-	}
-	
-	function propsView(mixin, args) {
-	    var componentObj = createComponentObj(mixin, args);
-	    var oldRender = componentObj.render;
-	    componentObj.render = function () {
-	        var _this = this;
-	
-	        this.traceReact('Render');
-	        return ratom.runInCtx(this, function () {
-	            return oldRender.call(_this, _this.props);
-	        });
-	    };
-	
-	    var component = React.createClass(componentObj);
-	    var factory = React.createFactory(component);
-	    return function (props, context, updater) {
-	        return factory(props, context);
-	    };
-	}
-	
-	function vectorView(mixin, args) {
-	    var componentObj = createComponentObj(mixin, args);
-	    var oldRender = componentObj.render;
-	    componentObj.render = function () {
-	        var _this2 = this;
-	
-	        this.traceReact('Render');
-	        return ratom.runInCtx(this, function () {
-	            return oldRender.apply(_this2, _this2.props.argv);
-	        });
-	    };
-	    var component = React.createClass(componentObj);
-	    var factory = React.createFactory(component);
-	
-	    return function () {
-	        return factory({ argv: Array.prototype.slice.call(arguments) });
-	    };
-	}
-	
-	function viewP() {
-	    return propsView([StatelessMixin], arguments);
-	}
-	
-	function viewV() {
-	    return vectorView([StatelessMixin], arguments);
-	}
-	
-	function viewSP() {
-	    return propsView([SubscriptionMixin], arguments);
-	}
-	
-	function viewSV() {
-	    return vectorView([SubscriptionMixin], arguments);
-	}
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-	
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-	exports.kind = undefined;
+	exports.requestAnimationFrame$ = exports.kind = undefined;
 	
 	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 	
@@ -2071,7 +1820,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	function cacheLookup(query) {
 	    var dynv = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : Immutable.List();
 	
-	    queryReaction.deref().get(makeCacheKey(query, dynv));
+	    return queryReaction.deref().get(makeCacheKey(query, dynv));
 	}
 	
 	function subscribe(query) {
@@ -2141,11 +1890,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return signals.map(function (v) {
 	            return v.deref();
 	        });
-	    } else if (Immutable.Map.isMap(signals)) {
+	    } else if (signals instanceof Immutable.Map) {
 	        return signals.map(function (v) {
 	            return v.deref();
 	        });
-	    } else if (Immutable.Seq.isSeq(signals)) {
+	    } else if (signals instanceof Immutable.Seq) {
 	        return signals.map(function (v) {
 	            return v.deref();
 	        });
@@ -2252,12 +2001,410 @@ return /******/ (function(modules) { // webpackBootstrap
 	    });
 	}
 	
+	var requestAnimationFrame$ = exports.requestAnimationFrame$ = new Rx.BehaviorSubject();
+	
 	function registerSub(queryId, computationFn) {
 	    return (0, _registrar.registerHandler)(kind, queryId, function subsRxHandlerFn(db, queryVec) {
 	        var dynVec = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : undefined;
 	
-	        return (0, _ratom.makeRxReaction)(computationFn(db.subject(), queryVec));
+	        return (0, _ratom.makeRxReaction)(computationFn(requestAnimationFrame$, queryVec));
 	    });
+	}
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+	
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	exports.SubscriptionMixin = exports.StatelessMixin = undefined;
+	
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+	
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+	
+	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
+	
+	exports.render = render;
+	exports.viewP = viewP;
+	exports.viewV = viewV;
+	exports.viewSP = viewSP;
+	exports.viewSV = viewSV;
+	
+	var _subs = __webpack_require__(13);
+	
+	var subs = _interopRequireWildcard(_subs);
+	
+	var _react = __webpack_require__(15);
+	
+	var React = _interopRequireWildcard(_react);
+	
+	var _shouldupdate = __webpack_require__(16);
+	
+	var _ratom = __webpack_require__(6);
+	
+	var ratom = _interopRequireWildcard(_ratom);
+	
+	var _batching = __webpack_require__(12);
+	
+	var batching = _interopRequireWildcard(_batching);
+	
+	var _interop = __webpack_require__(11);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+	
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+	
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+	
+	// export const pause$ = new Rx.BehaviorSubject(true);
+	
+	// export function deref(rx, transform) {
+	//     let ttransform = transform || (a => a);
+	//     let subj = new Rx.BehaviorSubject();
+	//     rx.map(ttransform).subscribe(subj).dispose();
+	//     return subj.getValue();
+	// }
+	
+	var data = {
+	    renderOrder: 0,
+	    toUpdate: []
+	};
+	
+	function shouldUpdateByDerefed(watching) {
+	    var _iteratorNormalCompletion = true;
+	    var _didIteratorError = false;
+	    var _iteratorError = undefined;
+	
+	    try {
+	        for (var _iterator = watching[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	            var watch = _step.value;
+	
+	            if (watch.shouldUpdate()) {
+	                return true;
+	            }
+	        }
+	    } catch (err) {
+	        _didIteratorError = true;
+	        _iteratorError = err;
+	    } finally {
+	        try {
+	            if (!_iteratorNormalCompletion && _iterator.return) {
+	                _iterator.return();
+	            }
+	        } finally {
+	            if (_didIteratorError) {
+	                throw _iteratorError;
+	            }
+	        }
+	    }
+	
+	    return false;
+	}
+	
+	function render() {
+	    data.toUpdate.sort(function (_ref, _ref2) {
+	        var _ref4 = _slicedToArray(_ref, 1),
+	            o1 = _ref4[0];
+	
+	        var _ref3 = _slicedToArray(_ref2, 1),
+	            o2 = _ref3[0];
+	
+	        return o1 - o2;
+	    });
+	
+	    data.toUpdate.forEach(function (_ref5) {
+	        var _ref6 = _slicedToArray(_ref5, 2),
+	            _ = _ref6[0],
+	            forceUpdate = _ref6[1];
+	
+	        return forceUpdate();
+	    });
+	    data.toUpdate = [];
+	}
+	// subs.render$
+	//     .pausable(pause$)
+	//     .subscribe(render);
+	
+	var StatelessMixin = exports.StatelessMixin = {
+	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
+	        return (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.state, nextState) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv);
+	    },
+	    getDisplayName: function getDisplayName() {
+	        return this.constructor.displayName;
+	    },
+	    traceReact: function traceReact(message) {
+	        if ((0, _interop.isTraceReact)()) {
+	            console.debug(message, this.getDisplayName(), {
+	                order: this.state.renderOrder,
+	                render: this.state.renderCycle,
+	                props: this.props, state: this.state
+	            });
+	        }
+	    },
+	    id: function id() {
+	        return this.getDisplayName();
+	    }
+	};
+	
+	function S4() {
+	    return ((1 + Math.random()) * 0x10000 | 0).toString(16).substring(1);
+	}
+	
+	// Generate a pseudo-GUID by concatenating random hexadecimal.
+	function guid() {
+	    return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4();
+	}
+	
+	var MyDeref = function (_ratom$Observable) {
+	    _inherits(MyDeref, _ratom$Observable);
+	
+	    function MyDeref(component, renderCycle, observable) {
+	        _classCallCheck(this, MyDeref);
+	
+	        var _this = _possibleConstructorReturn(this, (MyDeref.__proto__ || Object.getPrototypeOf(MyDeref)).call(this, 'de'));
+	
+	        _this._componentId = component.id();
+	        _this._renderCycle = renderCycle;
+	        _this._observable = observable;
+	        _this._lastValue = observable.peekValue();
+	        return _this;
+	    }
+	
+	    _createClass(MyDeref, [{
+	        key: 'notify',
+	        value: function notify() {
+	            this._notifyObservers();
+	        }
+	    }, {
+	        key: 'shouldDispose',
+	        value: function shouldDispose(renderCycle) {
+	            return renderCycle > this._renderCycle;
+	        }
+	    }, {
+	        key: 'dispose',
+	        value: function dispose() {
+	            _get(MyDeref.prototype.__proto__ || Object.getPrototypeOf(MyDeref.prototype), 'dispose', this).call(this);
+	            this._observable.dispose();
+	        }
+	    }, {
+	        key: 'deref',
+	        value: function deref() {
+	            return this._lastValue;
+	        }
+	    }, {
+	        key: 'shouldUpdate',
+	        value: function shouldUpdate() {
+	            return this._observable.isChanged(this._lastValue);
+	        }
+	    }]);
+	
+	    return MyDeref;
+	}(ratom.Observable);
+	
+	var SubscriptionMixin = exports.SubscriptionMixin = {
+	    derefSub: function derefSub(subVec, transform) {
+	        return ratom.deref(subs.subscribe(subVec), transform);
+	    },
+	
+	    getDisplayName: function getDisplayName() {
+	        return this.constructor.displayName;
+	    },
+	    getInitialState: function getInitialState() {
+	        return {
+	            watching: new Set(),
+	            renderOrder: data.renderOrder++,
+	            renderCycle: 0
+	        };
+	    },
+	    observe: function observe(watch) {
+	        if (!this.state.watching.has(watch)) {
+	            var deref = new MyDeref(this, this.state.renderCycle, watch);
+	            this.state.watching.add(deref);
+	            watch.subscribe(deref);
+	            deref.subscribe(this);
+	            watch.unsubscribe(this);
+	        }
+	    },
+	    id: function id() {
+	        return this.getDisplayName();
+	    },
+	
+	    // unobserve: function(observable) {
+	    //     this.state.watching.delete(observable);
+	    // },
+	    notify: function notify(dispose) {
+	        this.traceReact('Notify');
+	        batching.queueRender(this);
+	    },
+	    tryForceUpdate: function tryForceUpdate() {
+	        if (shouldUpdateByDerefed(this.state.watching)) {
+	            this.traceReact('Force update');
+	            // console.log('Force update', obj.getDisplayName());
+	            this.forceUpdate();
+	        }
+	    },
+	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
+	        var updateByProps = (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv),
+	            updateByState = (0, _shouldupdate.shouldUpdate)(this.state, nextState, ['watching', 'renderOrder', 'renderCycle']);
+	
+	        return updateByProps || updateByState;
+	    },
+	    deref: function deref(rx, aTransform, aId) {
+	        return ratom.deref(rx, aTransform);
+	    },
+	    unsubscribe: function unsubscribe() {
+	        var _this2 = this;
+	
+	        this.state.watching.forEach(function (watch) {
+	            watch.unsubscribe(_this2);
+	            watch.dispose();
+	        });
+	    },
+	    componentWillUpdate: function componentWillUpdate() {
+	        // console.log('Rendering', this.getDisplayName());
+	        this.state.renderCycle++;
+	        // this.unsubscribe();
+	    },
+	    componentDidUpdate: function componentDidUpdate() {
+	        var _iteratorNormalCompletion2 = true;
+	        var _didIteratorError2 = false;
+	        var _iteratorError2 = undefined;
+	
+	        try {
+	            for (var _iterator2 = this.state.watching[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                var watch = _step2.value;
+	
+	                // console.log(watch._observable.id(), this.state.renderCycle, watch.shouldDispose(this.state.renderCycle), watch);
+	                if (watch.shouldDispose(this.state.renderCycle)) {
+	                    this.state.watching.delete(watch);
+	                    watch.unsubscribe(this);
+	                    watch.dispose();
+	                }
+	            }
+	        } catch (err) {
+	            _didIteratorError2 = true;
+	            _iteratorError2 = err;
+	        } finally {
+	            try {
+	                if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	                    _iterator2.return();
+	                }
+	            } finally {
+	                if (_didIteratorError2) {
+	                    throw _iteratorError2;
+	                }
+	            }
+	        }
+	    },
+	    componentWillUnmount: function componentWillUnmount() {
+	        (0, _batching.markRendered)(this);
+	        this.unsubscribe();
+	    },
+	    traceReact: function traceReact(message) {
+	        if ((0, _interop.isTraceReact)()) {
+	            console.debug(message, this.getDisplayName(), {
+	                order: this.state.renderOrder,
+	                render: this.state.renderCycle,
+	                props: this.props, state: this.state
+	            });
+	        }
+	    }
+	};
+	
+	function createComponentObj(mixins, args) {
+	    var componentObj = void 0;
+	    switch (args.length) {
+	        case 2:
+	            if (typeof args[1].prototype === 'undefined') {
+	                args[1].mixins = mixins;
+	                componentObj = args[1];
+	            } else {
+	                componentObj = {
+	                    mixins: mixins,
+	                    render: args[1]
+	                };
+	            }
+	            break;
+	        case 3:
+	            if (typeof args[2].prototype === 'undefined') {
+	                // it's an object
+	                args[2].mixins = mixins.concat(args[1]);
+	                componentObj = args[2];
+	            } else {
+	                // it's a render function
+	                componentObj = {
+	                    mixins: mixins.concat(args[1]),
+	                    render: args[2]
+	                };
+	            }
+	            break;
+	        default:
+	            throw new Error('Expected 2 or 3 arguments, got ' + args.length);
+	    }
+	    componentObj.displayName = args[0];
+	    return componentObj;
+	}
+	
+	function propsView(mixin, args) {
+	    var componentObj = createComponentObj(mixin, args);
+	    var oldRender = componentObj.render;
+	    componentObj.render = function () {
+	        var _this3 = this;
+	
+	        this.traceReact('Render');
+	        (0, _batching.markRendered)(this);
+	        return ratom.runInCtx(this, function () {
+	            return oldRender.call(_this3, _this3.props);
+	        });
+	    };
+	
+	    var component = React.createClass(componentObj);
+	    var factory = React.createFactory(component);
+	    return function (props, context, updater) {
+	        return factory(props, context);
+	    };
+	}
+	
+	function vectorView(mixin, args) {
+	    var componentObj = createComponentObj(mixin, args);
+	    var oldRender = componentObj.render;
+	    componentObj.render = function () {
+	        var _this4 = this;
+	
+	        this.traceReact('Render');
+	        (0, _batching.markRendered)(this);
+	        return ratom.runInCtx(this, function () {
+	            return oldRender.apply(_this4, _this4.props.argv);
+	        });
+	    };
+	    var component = React.createClass(componentObj);
+	    var factory = React.createFactory(component);
+	
+	    return function () {
+	        return factory({ argv: Array.prototype.slice.call(arguments) });
+	    };
+	}
+	
+	function viewP() {
+	    return propsView([StatelessMixin], arguments);
+	}
+	
+	function viewV() {
+	    return vectorView([StatelessMixin], arguments);
+	}
+	
+	function viewSP() {
+	    return propsView([SubscriptionMixin], arguments);
+	}
+	
+	function viewSV() {
+	    return vectorView([SubscriptionMixin], arguments);
 	}
 
 /***/ },
@@ -2281,6 +2428,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.shouldUpdate = shouldUpdate;
 	
 	var _utils = __webpack_require__(17);
+	
+	function isChanged(entries) {
+	    return !entries.every(function (_ref) {
+	        var _ref2 = _slicedToArray(_ref, 2),
+	            value = _ref2[0],
+	            nextValue = _ref2[1];
+	
+	        if ((0, _utils.isObservable)(value) || (0, _utils.isObservable)(nextValue)) {
+	            return true;
+	        }
+	
+	        if ((0, _utils.isPrimitive)(value) && (0, _utils.isPrimitive)(nextValue) || (0, _utils.isImmutable)(value) && (0, _utils.isImmutable)(nextValue)) {
+	
+	            return value === nextValue;
+	        }
+	        return false;
+	    });
+	}
 	
 	/**
 	 * If props does not exist return false - Pure render mixin. If props exists and it contains mutable entries,
@@ -2309,17 +2474,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	
 	    if (entries.length) {
-	        return !entries.every(function (_ref) {
-	            var _ref2 = _slicedToArray(_ref, 2),
-	                value = _ref2[0],
-	                nextValue = _ref2[1];
-	
-	            if ((0, _utils.isPrimitive)(value) && (0, _utils.isPrimitive)(nextValue) || (0, _utils.isImmutable)(value) && (0, _utils.isImmutable)(nextValue)) {
-	
-	                return value === nextValue;
-	            }
-	            return false;
-	        });
+	        return isChanged(entries);
 	    }
 	    return false;
 	}
@@ -2340,15 +2495,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.isPrimitive = isPrimitive;
 	exports.isFunction = isFunction;
 	exports.isObject = isObject;
+	exports.isObservable = isObservable;
 	
 	var _immutable = __webpack_require__(3);
 	
 	var Immutable = _interopRequireWildcard(_immutable);
 	
+	var _ratom = __webpack_require__(6);
+	
+	var _rx = __webpack_require__(7);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
 	function isImmutable(maybeImmutable) {
-	    return Immutable.Iterable.isIterable(maybeImmutable);
+	    return maybeImmutable instanceof Immutable.Iterable;
 	}
 	
 	function isPrimitive(value) {
@@ -2362,6 +2524,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function isObject(obj) {
 	    return (typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object';
+	}
+	
+	function isObservable(obj) {
+	    return obj instanceof _ratom.Observable || obj instanceof Rx.Observable;
 	}
 
 /***/ },

@@ -1,6 +1,8 @@
 import * as Immutable from 'immutable';
 import {handle} from 'reframe/events';
 import {nextTick, afterRender} from 'reframe/interop';
+import {requestAnimationFrame$} from 'reframe/subs';
+import {appDb} from 'reframe/db';
 
 const laterFns = {
     'flush-dom': (f) => afterRender(() => nextTick(f)),
@@ -53,7 +55,14 @@ function doTrigger(fsm, state, trigger, arg) {
         }];
     }
     else if (state === 'running' && trigger === 'finish-run') {
-        return fsm._queue.length === 0 ? ['idle'] : ['scheduled', (fsm) => fsm._runNextTick()];
+        return fsm._queue.length === 0 ?
+            ['idle', () => {
+                requestAnimationFrame$.onNext(appDb.peekValue())
+            }] :
+            ['scheduled', (fsm) => {
+                requestAnimationFrame$.onNext(appDb.peekValue());
+                fsm._runNextTick()
+            }];
     }
     /**
      * State: :paused (:flush-dom metadata on an event has caused a temporary pause in processing)
@@ -199,4 +208,5 @@ export function dispatch(event) {
 export function dispatchSync(event) {
     handle(event);
     eventQueue._fsm._callPostEventCallbacks(event);
+    requestAnimationFrame$.onNext(appDb.peekValue());
 }

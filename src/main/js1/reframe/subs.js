@@ -181,8 +181,10 @@ export function regSub(queryId, ...args) {
     });
 }
 
+export const requestAnimationFrame$ = new Rx.BehaviorSubject();
+
 export function registerSub(queryId, computationFn) {
     return registerHandler(kind, queryId, function subsRxHandlerFn(db, queryVec, dynVec = undefined) {
-        return makeRxReaction(computationFn(db.subject(), queryVec));
+        return makeRxReaction(computationFn(requestAnimationFrame$, queryVec));
     });
 }

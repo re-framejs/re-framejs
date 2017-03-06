@@ -6,6 +6,7 @@ import {shouldUpdate} from 'reframe/shouldupdate';
 import * as ratom from 'reframe/ratom';
 import * as batching from 'reframe/batching';
 import {isDebug, isTraceReact} from 'reframe/interop';
+import {markRendered} from 'reframe/batching';
 
 // export const pause$ = new Rx.BehaviorSubject(true);
 
@@ -174,6 +175,7 @@ export let SubscriptionMixin = {
         }
     },
     componentWillUnmount: function () {
+        markRendered(this);
         this.unsubscribe();
     },
     traceReact(message) {
@@ -226,6 +228,7 @@ function propsView(mixin, args) {
     let oldRender = componentObj.render;
     componentObj.render = function () {
         this.traceReact('Render');
+        markRendered(this);
         return ratom.runInCtx(this, () => oldRender.call(this, this.props));
     };
 
@@ -241,6 +244,7 @@ function vectorView(mixin, args) {
     let oldRender = componentObj.render;
     componentObj.render = function () {
         this.traceReact('Render');
+        markRendered(this);
         return ratom.runInCtx(this, () => oldRender.apply(this, this.props.argv));
     };
     let component = React.createClass(componentObj);

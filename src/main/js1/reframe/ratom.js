@@ -273,6 +273,10 @@ export function makeCursor(atom, path) {
     return new Cursor(atom, path);
 }
 
+export function pluck(atom, path) {
+    return atom.map(val => val && val.getIn(path));
+}
+
 export function deref(observable, transform) {
     if (observable instanceof Rx.Observable) {
         if (transform) {

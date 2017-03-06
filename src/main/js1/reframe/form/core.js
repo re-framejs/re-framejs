@@ -1,7 +1,8 @@
 import {view} from 'reframe/react';
-import {makeCursor, makeAtom} from 'reframe/ratom';
+import {makeAtom, pluck} from 'reframe/ratom';
 import * as React from 'react';
 import * as Immutable from 'immutable';
+import {shouldUpdate} from 'reframe/shouldupdate';
 
 function normalizeNumStr(s) {
     return s
@@ -9,7 +10,7 @@ function normalizeNumStr(s) {
         .replaceAll(/\s/, '');
 }
 
-class Coercer {
+class FormatCoercer {
     constructor(format, parse, regex, allowBlank) {
         this._format = format;
         this._parse = parse;
@@ -37,18 +38,38 @@ class Coercer {
     }
 }
 
-class IntCoercer extends Coercer {
+class IntCoercer extends FormatCoercer {
     constructor(nf) {
         super(true, nf.format.bind(nf), /(\+|\-)?[\s\d]+/, s => parseInt(normalizeNumStr(s)));
     }
 }
 
-class NumberCoercer extends Coercer {
+class NumberCoercer extends FormatCoercer {
     constructor(nf) {
         super(true, nf.format.bind(nf), /(\+|\-)?[\s\d]+/, s => parseFloat(normalizeNumStr(s)));
     }
 }
 
+class BoolCoercer {
+    constructor(blankAsFalse) {
+        constructor._blankAsFalse = blankAsFalse;
+    }
+
+    toStr(value) {
+        return '' + value;
+    }
+
+    fromStr(strValue) {
+        if (this._blankAsFalse && !strValue) {
+            return false;
+        }
+        return Boolean(strValue);
+    }
+
+    isValidStr(strValue) {
+        return true;
+    }
+}
 
 
 function fieldPath(type, path) {
@@ -87,7 +108,7 @@ class Field {
     }
 
     value() {
-        return makeCursor(this._form, fieldPath('value', this._path));
+        return pluck(this._form, fieldPath('value', this._path));
     }
 
     resetValue(value) {
@@ -130,6 +151,12 @@ class Field {
         });
     }
 
+    strValue() {
+        return this._form.map(form => {
+            return form.getIn(fieldPath('str-value', this._path)) || this.toStr(form.getIn(fieldPath('value', this._path)));
+        });
+    }
+
     toStr(value) {
         return this._coercer.toStr(value);
     }
@@ -139,11 +166,11 @@ class Field {
     }
 
     isTouched() {
-        return makeCursor(this._form, fieldPath('field-touched', this._path));
+        return pluck(this._form, fieldPath('field-touched', this._path));
     }
 
     errors() {
-        return makeCursor(this._form, fieldPath('validator-error', this._path));
+        return pluck(this._form, fieldPath('validator-error', this._path));
     }
 
     isValid() {
@@ -166,7 +193,7 @@ class Form {
     }
 
     value() {
-        return makeCursor(this._form, ['value']);
+        return pluck(this._form, ['value']);
     }
 
     resetValue() {
@@ -182,7 +209,7 @@ class Form {
     }
 
     isTouched() {
-        return makeCursor(this._form, ['form-touched']);
+        return pluck(this._form, ['form-touched']);
     }
 
     isValid() {
@@ -197,6 +224,89 @@ class Form {
         return new Field(this, path, coercer);
     }
 }
+
+function getOptions(field, attributes) {
+    if (attributes.choices) {
+        const choices = attributes.choices.map(([id, label]) => React.DOM.option({
+            value: field.toStr(id),
+            key: field.toStr(id)
+        }, label));
+
+        if (choices.toArray) {
+            return choices.toArray();
+        }
+        return choices;
+    }
+    return attributes.options;
+}
+
+function selectInput(field, attributes) {
+    const options = getOptions(attributes);
+    let attrs = Object.assign(
+        {type: 'text'},
+        attributes, {
+            value: field.strValue().deref(),
+            onChange: e => field.setStrValue(e.target.value, true)
+        });
+    delete attrs.options;
+    delete attrs.choices;
+    return React.DOM.select(attrs, options);
+}
+
+function checkboxInput(field, attributes) {
+    let attrs = Object.assign(
+        {type: 'checkbox'},
+        attributes, {
+            checked: field.value().deref() || false,
+            onChange: e => field.setValue(e.target.checked)
+        });
+    return React.DOM.input(attrs);
+}
+
+
+function radioInput(field, attributes) {
+    const value = attributes.value;
+    let attrs = Object.assign(
+        {type: 'radio'},
+        attributes, {
+            value: field.toStr(value),
+            checked: field.value().deref() === value,
+            onChange: e => field.setValue(value)
+        });
+    return React.DOM.input(attrs);
+}
+
+function textInput(field, attributes) {
+    let attrs = Object.assign(
+        {type: 'text'},
+        attributes, {
+            value: field.strValue().deref(),
+            onChange: e => field.setStrValue(e.target.value, attributes.touchOnChange || true),
+            onBlur: e => field.touch()
+        });
+    delete attrs.touchOnChange;
+    return React.DOM.input(attrs);
+}
+
+const Input = view('Input', {
+    shouldComponentUpdate: function (nextProps, nextState) {
+        let fieldDifferent = this.props.argv[0] !== nextProps.argv[0];
+        let attributesDifferent = shouldUpdate(this.props.argv[1], nextProps.argv[1], ['choices', 'options']);
+        return fieldDifferent || attributesDifferent;
+    },
+    render (field, attributes) {
+        switch (attributes.type) {
+            case 'select':
+                return selectInput(field, attributes);
+            case 'checkbox':
+                return checkboxInput(field, attributes);
+            case 'radio':
+                return radioInput(field, attributes);
+            default:
+                return textInput(field, attributes);
+        }
+    }
+});
 
 
 export function makeForm(value, {validator}) {

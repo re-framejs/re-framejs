@@ -216,7 +216,7 @@ class RxReaction extends Observable {
 
     dispose() {
         super.dispose();
-        if (this._subscription) {
+        if (this._observers.size === 0 && this._subscription) {
             this._subscription.dispose();
             delete this._subscription;
         }

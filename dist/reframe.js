@@ -1305,7 +1305,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * State: :running (the queue is being processed one event after another)
 	         */
 	        else if (state === 'running' && trigger === 'add-event') {
-	                return ['scheduled', function (fsm) {
+	                return ['running', function (fsm) {
 	                    fsm._addEvent(arg);
 	                }];
 	            } else if (state === 'running' && trigger === 'pause') {

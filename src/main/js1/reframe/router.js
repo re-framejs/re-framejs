@@ -40,7 +40,7 @@ function doTrigger(fsm, state, trigger, arg) {
      * State: :running (the queue is being processed one event after another)
      */
     else if (state === 'running' && trigger === 'add-event') {
-        return ['scheduled', (fsm) => {
+        return ['running', (fsm) => {
             fsm._addEvent(arg);
         }];
     }

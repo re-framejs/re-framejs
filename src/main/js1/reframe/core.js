@@ -156,4 +156,14 @@ export function compMiddleware(interceptors) {
     return interceptors;
 }
 
+export function swap(atom, f, ...args) {
+    return atom.swap(f, ...args);
+}
+
+export function reset(atom, value) {
+    return atom.reset(value);
+}
+
+// TODO add render, pause
+
 module.exports.default = module.exports;

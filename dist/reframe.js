@@ -78,6 +78,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.registerSub = registerSub;
 	exports.registerHandler = registerHandler;
 	exports.compMiddleware = compMiddleware;
+	exports.swap = swap;
+	exports.reset = reset;
 	
 	var _cofx = __webpack_require__(1);
 	
@@ -278,6 +280,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function compMiddleware(interceptors) {
 	    return interceptors;
+	}
+	
+	function swap(atom, f) {
+	    for (var _len = arguments.length, args = Array(_len > 2 ? _len - 2 : 0), _key = 2; _key < _len; _key++) {
+	        args[_key - 2] = arguments[_key];
+	    }
+	
+	    return atom.swap.apply(atom, [f].concat(args));
+	}
+	
+	function reset(atom, value) {
+	    return atom.reset(value);
 	}
 	
 	module.exports.default = module.exports;

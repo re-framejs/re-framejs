@@ -26,6 +26,8 @@ function doTrigger(fsm, state, trigger, arg) {
             fsm._addEvent(arg);
             fsm._runNextTick();
         }];
+    } else if (state === 'idle' && trigger === 'resume') {
+        return ['idle', (fsm) => {}];
     }
     /**
      * State: :scheduled  (the queue is scheduled to run, soon)
@@ -40,6 +42,8 @@ function doTrigger(fsm, state, trigger, arg) {
         return ['running', (fsm) => {
             fsm._runQueue();
         }];
+    } else if (state === 'scheduled' && trigger === 'resume') {
+        return ['scheduled', (fsm) => {}];
     }
 
     /**
@@ -77,13 +81,16 @@ function doTrigger(fsm, state, trigger, arg) {
         return ['paused', (fsm) => {
             fsm._addEvent(arg);
         }];
+    } else if (state === 'paused' && trigger === 'run-queue') {
+        return ['paused', (fsm) => {
+        }];
     }
     else if (state === 'paused' && trigger === 'resume') {
         return ['running', (fsm) => {
             fsm._resume(arg);
         }];
     } else {
-        throw new Error("re-frame: router state transition not found. " + state + " " + trigger)
+        throw new Error("re-frame: router state transition not found. State '" + state + "', trigger '" + trigger +"'");
     }
 }
 
@@ -165,6 +172,7 @@ class Fsm {
     }
 
     _resume() {
+        // console.log('resume');
         // this._process1stEventInQueue();
         this._runQueue();
     }

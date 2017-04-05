@@ -297,7 +297,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	module.exports.default = module.exports;
 	
-	var pause$ = exports.pause$ = new Rx.BehaviorSubject(true);
+	var pause$ = exports.pause$ = new Rx.Subject();
 	
 	function togglePause(pause) {
 	    if (pause) {
@@ -306,8 +306,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        router.resume();
 	    }
 	}
-	pause$.subscribe(function (run) {
-	    return togglePause(!run);
+	pause$.subscribe(function (pause) {
+	    return togglePause(pause);
 	});
 
 /***/ },
@@ -1323,6 +1323,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            fsm._addEvent(arg);
 	            fsm._runNextTick();
 	        }];
+	    } else if (state === 'idle' && trigger === 'resume') {
+	        return ['idle', function (fsm) {}];
 	    }
 	    /**
 	     * State: :scheduled  (the queue is scheduled to run, soon)
@@ -1335,6 +1337,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return ['running', function (fsm) {
 	                fsm._runQueue();
 	            }];
+	        } else if (state === 'scheduled' && trigger === 'resume') {
+	            return ['scheduled', function (fsm) {}];
 	        }
 	
 	        /**
@@ -1367,12 +1371,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    return ['paused', function (fsm) {
 	                        fsm._addEvent(arg);
 	                    }];
+	                } else if (state === 'paused' && trigger === 'run-queue') {
+	                    return ['paused', function (fsm) {}];
 	                } else if (state === 'paused' && trigger === 'resume') {
 	                    return ['running', function (fsm) {
 	                        fsm._resume(arg);
 	                    }];
 	                } else {
-	                    throw new Error("re-frame: router state transition not found. " + state + " " + trigger);
+	                    throw new Error("re-frame: router state transition not found. State '" + state + "', trigger '" + trigger + "'");
 	                }
 	}
 	
@@ -1472,6 +1478,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_resume',
 	        value: function _resume() {
+	            // console.log('resume');
 	            // this._process1stEventInQueue();
 	            this._runQueue();
 	        }

@@ -166,6 +166,8 @@ export function reset(atom, value) {
 
 module.exports.default = module.exports;
 
+export const pause$ = new Rx.BehaviorSubject(true);
+
 export function togglePause(pause) {
     if (pause) {
         router.pause();
@@ -173,3 +175,4 @@ export function togglePause(pause) {
         router.resume();
     }
 }
+pause$.subscribe(run => togglePause(!run));

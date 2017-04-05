@@ -59,7 +59,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.render = exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
+	exports.pause$ = exports.render = exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
 	exports.toggleDebug = toggleDebug;
 	exports.toggleReactDebug = toggleReactDebug;
 	exports.isDebug = isDebug;
@@ -295,8 +295,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return atom.reset(value);
 	}
 	
-	// TODO add render, pause
 	module.exports.default = module.exports;
+	
+	var pause$ = exports.pause$ = new Rx.BehaviorSubject(true);
 	
 	function togglePause(pause) {
 	    if (pause) {
@@ -305,6 +306,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        router.resume();
 	    }
 	}
+	pause$.subscribe(function (run) {
+	    return togglePause(!run);
+	});
 
 /***/ },
 /* 1 */

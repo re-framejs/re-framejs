@@ -13,7 +13,6 @@ import * as subs from 'reframe/subs';
 // import * as _form from 'reframe/form/core';
 //
 // export const form = _form;
-
 export function toggleDebug(value = undefined) {
     interop.toggleLog('debug', value);
 }
@@ -136,6 +135,7 @@ export const viewV = react.viewV;
 export const viewSP = react.viewSP;
 export const viewSV = react.viewSV;
 export const view = react.viewSV;
+export const render = react.render;
 
 // deprecated
 import {Index} from 'reframe/subindex.js';
@@ -164,6 +164,12 @@ export function reset(atom, value) {
     return atom.reset(value);
 }
 
-// TODO add render, pause
-
 module.exports.default = module.exports;
+
+export function togglePause(pause) {
+    if (pause) {
+        router.pause();
+    } else {
+        router.resume();
+    }
+}

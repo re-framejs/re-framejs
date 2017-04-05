@@ -59,7 +59,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
+	exports.render = exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
 	exports.toggleDebug = toggleDebug;
 	exports.toggleReactDebug = toggleReactDebug;
 	exports.isDebug = isDebug;
@@ -80,6 +80,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.compMiddleware = compMiddleware;
 	exports.swap = swap;
 	exports.reset = reset;
+	exports.togglePause = togglePause;
 	
 	var _cofx = __webpack_require__(1);
 	
@@ -134,7 +135,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	// import * as _form from 'reframe/form/core';
 	//
 	// export const form = _form;
-	
 	function toggleDebug() {
 	    var value = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : undefined;
 	
@@ -260,6 +260,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var viewSP = exports.viewSP = react.viewSP;
 	var viewSV = exports.viewSV = react.viewSV;
 	var view = exports.view = react.viewSV;
+	var render = exports.render = react.render;
 	
 	// deprecated
 	
@@ -294,7 +295,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return atom.reset(value);
 	}
 	
+	// TODO add render, pause
 	module.exports.default = module.exports;
+	
+	function togglePause(pause) {
+	    if (pause) {
+	        router.pause();
+	    } else {
+	        router.resume();
+	    }
+	}
 
 /***/ },
 /* 1 */
@@ -1260,6 +1270,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
+	exports.pause = pause;
+	exports.resume = resume;
 	exports.dispatch = dispatch;
 	exports.dispatchSync = dispatchSync;
 	
@@ -1291,6 +1303,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	
 	function doTrigger(fsm, state, trigger, arg) {
+	    if (trigger === 'pause') {
+	        return ['paused', function (fsm) {
+	            fsm._pause();
+	        }];
+	    }
+	
 	    /**
 	     * if you are in state ":idle" and a trigger ":add-event"
 	     * happens, then move the FSM to state ":scheduled" and execute
@@ -1346,7 +1364,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                        fsm._addEvent(arg);
 	                    }];
 	                } else if (state === 'paused' && trigger === 'resume') {
-	                    return ['paused', function (fsm) {
+	                    return ['running', function (fsm) {
 	                        fsm._resume(arg);
 	                    }];
 	                } else {
@@ -1435,25 +1453,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_pause',
 	        value: function _pause(laterFn) {
-	            var _this = this;
-	
-	            laterFn(function () {
-	                return _this.trigger('resume', null);
-	            });
+	            // console.log('pause');
+	            // laterFn(() => this.trigger('resume', null));
 	        }
 	    }, {
 	        key: '_callPostEventCallbacks',
 	        value: function _callPostEventCallbacks(event) {
-	            var _this2 = this;
+	            var _this = this;
 	
 	            Object.keys(this._postEventCallbacks).forEach(function (key) {
-	                _this2._postEventCallbacks[key](event, [].concat(_toConsumableArray(_this2._queue)));
+	                _this._postEventCallbacks[key](event, [].concat(_toConsumableArray(_this._queue)));
 	            });
 	        }
 	    }, {
 	        key: '_resume',
 	        value: function _resume() {
-	            this._process1stEventInQueue();
+	            // this._process1stEventInQueue();
 	            this._runQueue();
 	        }
 	    }]);
@@ -1474,6 +1489,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this._fsm.trigger('add-event', event);
 	        }
 	    }, {
+	        key: 'pause',
+	        value: function pause() {
+	            this._fsm.trigger('pause');
+	        }
+	    }, {
+	        key: 'resume',
+	        value: function resume() {
+	            this._fsm.trigger('resume');
+	        }
+	    }, {
 	        key: 'addPostEventCallback',
 	        value: function addPostEventCallback(id, callbackFn) {
 	            this._fsm.addPostEventCallback(id, callbackFn);
@@ -1489,6 +1514,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	}();
 	
 	var eventQueue = new EventQueue();
+	
+	function pause() {
+	    eventQueue.pause();
+	}
+	
+	function resume() {
+	    eventQueue.resume();
+	}
 	
 	/**
 	 * Queue the given event for processing by the registered event handler.

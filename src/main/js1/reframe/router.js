@@ -10,6 +10,12 @@ const laterFns = {
 };
 
 function doTrigger(fsm, state, trigger, arg) {
+    if (trigger === 'pause') {
+        return ['paused', (fsm) => {
+            fsm._pause();
+        }];
+    }
+
     /**
      * if you are in state ":idle" and a trigger ":add-event"
      * happens, then move the FSM to state ":scheduled" and execute
@@ -73,7 +79,7 @@ function doTrigger(fsm, state, trigger, arg) {
         }];
     }
     else if (state === 'paused' && trigger === 'resume') {
-        return ['paused', (fsm) => {
+        return ['running', (fsm) => {
             fsm._resume(arg);
         }];
     } else {
@@ -148,7 +154,8 @@ class Fsm {
     }
 
     _pause(laterFn) {
-        laterFn(() => this.trigger('resume', null));
+        // console.log('pause');
+        // laterFn(() => this.trigger('resume', null));
     }
 
     _callPostEventCallbacks(event) {
@@ -158,7 +165,7 @@ class Fsm {
     }
 
     _resume() {
-        this._process1stEventInQueue();
+        // this._process1stEventInQueue();
         this._runQueue();
     }
 }
@@ -171,6 +178,14 @@ class EventQueue {
         this._fsm.trigger('add-event', event);
     }
 
+    pause() {
+        this._fsm.trigger('pause');
+    }
+
+    resume() {
+        this._fsm.trigger('resume');
+    }
+
     addPostEventCallback(id, callbackFn) {
         this._fsm.addPostEventCallback(id, callbackFn);
     }
@@ -181,6 +196,14 @@ class EventQueue {
 }
 
 const eventQueue = new EventQueue();
+
+export function pause() {
+    eventQueue.pause();
+}
+
+export function resume() {
+    eventQueue.resume();
+}
 
 /**
  * Queue the given event for processing by the registered event handler.

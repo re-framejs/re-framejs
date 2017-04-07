@@ -113,12 +113,12 @@ jhah dasf asf
         var x = random(size) + '';
         var y = random(size) + '';
 
-        reframe.dispatchSync(['update', y, x]);
+        reframe.dispatch(['update', y, x]);
     };
 
     var startTime = performance.now(),
             count = 0,
-            batchSize = 1;
+            batchSize = 10;
 
     /* eslint-disable no-console */
     //var a = [];
@@ -144,8 +144,16 @@ jhah dasf asf
 //        while(true) {
 //            update()
 //        }
-        setInterval(update, 0);
+        window.started = setInterval(update, 0);
     };
+
+    window.stop = function() {
+        clearInterval(window.started);
+    }
+
+    window.hide = function() {
+        ReactDOM.unmountComponentAtNode(document.getElementById('app'));
+    }
 
     //var o = Rx.Observable
     //    .fromArray([1,2,3])

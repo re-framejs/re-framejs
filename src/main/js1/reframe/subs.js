@@ -7,7 +7,13 @@ import {reagentId} from 'reframe/interop';
 
 export const kind = 'sub';
 
+// -- cache -------------------------------------------------------------------
+//
+// De-duplicate subscriptions. If two or more equal subscriptions
+// are concurrently active, we want only one handler running.
+// Two subscriptions are "equal" if their query vectors serialized to string equals.
 const queryReaction = makeAtom(Immutable.Map());
+// window.queryReaction = queryReaction;
 
 /**
  * Runs on-dispose for all subscriptions we have in the subscription cache.
@@ -29,7 +35,9 @@ export function clearSubscriptionCache() {
 }
 
 function makeCacheKey(query, dynv) {
-    return Immutable.List([Immutable.List(query), Immutable.List(dynv)]);
+    // cache key should be created either recursively or serializing by string, string is faster (?? safer ??)
+    return (query || []).join("|") + "|" + (dynv || []).join("|");
+    // return Immutable.List([Immutable.List(query), Immutable.List(dynv)]);
 }
 
 export function clearAllHandlers() {
@@ -157,6 +165,26 @@ function checkRx(reaction) {
     return reaction;
 }
 
+/**
+ *   "Associate the given `query id` with a handler function and an optional signal function.
+
+ There's 2 ways this function can be called
+
+ 1. regSub('test-sub', (db, [_]) => db)
+ The value in app-db is passed to the computation function as the 1st argument.
+
+ 2. regSub('a-b-sub',
+        (q-vec, d-vec) => [subscribe(['a-sub']), subscribe(['b-sub'])],
+        ([a, b], q-vec) => {a: a, b: b})
+
+ Two functions provided. The 2nd is computation function, as before. The 1st
+ is returns what `input signals` should be provided to the computation. The
+ `input signals` function is called with two arguments: the query vector
+ and the dynamic vector. The return value can be singleton reaction or
+ a sequence of reactions.
+
+ "
+ */
 export function regSub(queryId, ...args) {
     const
         computationFn = args[args.length - 1],

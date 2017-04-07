@@ -72,7 +72,7 @@ function guid() {
     return (S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4());
 }
 
-class MyDeref extends (ratom.Observable) {
+class ReactViewDeref extends (ratom.Observable) {
     constructor(component, renderCycle, observable) {
         super('de');
         this._componentId = component.id();
@@ -120,7 +120,7 @@ export let SubscriptionMixin = {
     },
     observe: function (watch) {
         if (!this.state.watching.has(watch)) {
-            const deref = new MyDeref(this, this.state.renderCycle, watch);
+            const deref = new ReactViewDeref(this, this.state.renderCycle, watch);
             this.state.watching.add(deref);
             watch.subscribe(deref);
             deref.subscribe(this);

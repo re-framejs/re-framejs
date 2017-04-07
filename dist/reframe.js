@@ -333,6 +333,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return (0, _registrar.registerHandler)(kind, id, handlerFn);
 	}
 	
+	/**
+	 *   Returns an interceptor which adds to a `context's` `:coeffects`.
+	 * `coeffects` are the input resources required by an event handler
+	 * to perform its job. The two most obvious ones are `db` and `event`.
+	 * But sometimes a handler might need other resources.
+	 * Perhaps a handler needs a random number or a GUID or the current datetime.
+	 * Perhaps it needs access to the connection to a DataScript database.
+	 * If the handler directly access these resources, it stops being as
+	 * pure. It immedaitely becomes harder to test, etc.
+	 * So the necessary resources are \"injected\" into the `coeffect` (map)
+	 * given the handler.
+	 * Given an `id`, and an optional value, lookup the registered coeffect
+	 * handler (previously registered via `reg-cofx`) and it with two arguments:
+	 * the current value of `:coeffects` and, optionally, the value. The registered handler
+	 * is expected to return a modified coeffect.
+	 * @param id
+	 * @param value
+	 * @returns {*}
+	 */
 	function injectCofx(id) {
 	    var value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
 	
@@ -586,6 +605,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 	
+	// -- Application State  --------------------------------------------------------------------------
+	//
+	// Should not be accessed directly by application code.
+	// Read access goes through subscriptions.
+	// Updates via event handlers.
 	var appDb = exports.appDb = (0, _ratom.makeRatom)(Immutable.Map());
 
 /***/ },
@@ -597,7 +621,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.Observable = exports.db$ = undefined;
+	exports.Observable = undefined;
 	
 	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
 	
@@ -627,8 +651,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-	
-	var db$ = exports.db$ = new Rx.BehaviorSubject(Immutable.Map());
 	
 	var ratomCtx = [];
 	var id = 1;
@@ -1297,6 +1319,61 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 	
+	//  -- Router Loop ------------------------------------------------------------
+	//
+	//  A call to "re-frame.core/dispatch" places an event on a queue for processing.
+	//      A short time later, the handler registered to handle this event will be run.
+	//  What follows is the implementation of this process.
+	//
+	//  The task is to process queued events in a perpetual loop, one after
+	//  the other, FIFO, calling the registered event-handler for each, being idle when
+	//  there are no events, and firing up when one arrives.
+	//
+	//  But browsers only have a single thread of control and we must be
+	//  careful to not hog the CPU. When processing events one after another, we
+	//  must regularly hand back control to the browser, so it can redraw, process
+	//  websockets, etc. But not too regularly! If we are in a de-focused browser
+	//  tab, our app will be CPU throttled. Each time we get back control, we have
+	//  to process all queued events, or else something like a bursty websocket
+	//  (producing events) might overwhelm the queue. So there's a balance.
+	//
+	//  The processing/handling of an event happens "asynchronously" sometime after
+	//  that event was enqueued via "dispatch". The original implementation of this router loop
+	//  used `core.async`. As a result, it was fairly simple, and it mostly worked,
+	//  but it did not give enough control. So now we hand-roll our own,
+	//  finite-state-machine and all.
+	//
+	//  In what follows, the strategy is this:
+	//    - maintain a FIFO queue of `dispatched` events.
+	//    - when a new event arrives, "schedule" processing of this queue using
+	//      goog.async.nextTick, which means it will happen "very soon".
+	//    - when processing events, one after the other, do ALL the currently
+	//      queued events. Don't stop. Don't yield to the browser. Hog that CPU.
+	//    - but if any new events are dispatched during this cycle of processing,
+	//      don't do them immediately. Leave them queued. Yield first to the browser,
+	//      and do these new events in the next processing cycle. That way we drain
+	//      the queue up to a point, but we never hog the CPU forever. In
+	//      particular, we handle the case where handling one event will beget
+	//      another event. The freshly begotten event will be handled next cycle,
+	//      with yielding in-between.
+	//        - In some cases, an event should not be handled until after the GUI has been
+	//      updated, i.e., after the next Reagent animation frame. In such a case,
+	//      the event should be dispatched with :flush-dom metadata like this:
+	//        (dispatch ^:flush-dom [:event-id other params])
+	//      Such an event will temporarily block all further processing because
+	//      events are processed sequentially: we handle one event completely
+	//      before we handle the ones behind it.
+	//
+	//  Implementation notes:
+	//        - queue processing can be in a number of states: scheduled, running, paused
+	//      etc. So it is modeled as a Finite State Machine.
+	//      See "-fsm-trigger" (below) for the states and transitions.
+	//    - the scheduling is done via "goog.async.nextTick" which is pretty quick
+	//    - when the event has :flush-dom metadata we schedule via
+	//        "reagent.core.after-render"
+	//      which will run event processing after the next Reagent animation frame.
+	//
+	
 	var laterFns = {
 	    'flush-dom': function flushDom(f) {
 	        return (0, _interop.afterRender)(function () {
@@ -1441,9 +1518,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_runNextTick',
 	        value: function _runNextTick() {
-	            (0, _interop.nextTick)(function runProcessEvents() {
+	            setTimeout(function runProcessEvents() {
 	                return this.trigger("run-queue", null);
-	            }.bind(this));
+	            }.bind(this), 0);
 	        }
 	    }, {
 	        key: '_runQueue',
@@ -1829,7 +1906,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var kind = exports.kind = 'sub';
 	
+	// -- cache -------------------------------------------------------------------
+	//
+	// De-duplicate subscriptions. If two or more equal subscriptions
+	// are concurrently active, we want only one handler running.
+	// Two subscriptions are "equal" if their query vectors serialized to string equals.
 	var queryReaction = (0, _ratom.makeAtom)(Immutable.Map());
+	// window.queryReaction = queryReaction;
 	
 	/**
 	 * Runs on-dispose for all subscriptions we have in the subscription cache.
@@ -1853,7 +1936,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function makeCacheKey(query, dynv) {
-	    return Immutable.List([Immutable.List(query), Immutable.List(dynv)]);
+	    // cache key should be created either recursively or serializing by string, string is faster (?? safer ??)
+	    return (query || []).join("|") + "|" + (dynv || []).join("|");
+	    // return Immutable.List([Immutable.List(query), Immutable.List(dynv)]);
 	}
 	
 	function clearAllHandlers() {
@@ -2016,6 +2101,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return reaction;
 	}
 	
+	/**
+	 *   "Associate the given `query id` with a handler function and an optional signal function.
+	
+	 There's 2 ways this function can be called
+	
+	 1. regSub('test-sub', (db, [_]) => db)
+	 The value in app-db is passed to the computation function as the 1st argument.
+	
+	 2. regSub('a-b-sub',
+	        (q-vec, d-vec) => [subscribe(['a-sub']), subscribe(['b-sub'])],
+	        ([a, b], q-vec) => {a: a, b: b})
+	
+	 Two functions provided. The 2nd is computation function, as before. The 1st
+	 is returns what `input signals` should be provided to the computation. The
+	 `input signals` function is called with two arguments: the query vector
+	 and the dynamic vector. The return value can be singleton reaction or
+	 a sequence of reactions.
+	
+	 "
+	 */
 	function regSub(queryId) {
 	    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
 	        args[_key - 1] = arguments[_key];
@@ -2219,13 +2324,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return S4() + S4() + "-" + S4() + "-" + S4() + "-" + S4() + "-" + S4() + S4() + S4();
 	}
 	
-	var MyDeref = function (_ratom$Observable) {
-	    _inherits(MyDeref, _ratom$Observable);
+	var ReactViewDeref = function (_ratom$Observable) {
+	    _inherits(ReactViewDeref, _ratom$Observable);
 	
-	    function MyDeref(component, renderCycle, observable) {
-	        _classCallCheck(this, MyDeref);
+	    function ReactViewDeref(component, renderCycle, observable) {
+	        _classCallCheck(this, ReactViewDeref);
 	
-	        var _this = _possibleConstructorReturn(this, (MyDeref.__proto__ || Object.getPrototypeOf(MyDeref)).call(this, 'de'));
+	        var _this = _possibleConstructorReturn(this, (ReactViewDeref.__proto__ || Object.getPrototypeOf(ReactViewDeref)).call(this, 'de'));
 	
 	        _this._componentId = component.id();
 	        _this._renderCycle = renderCycle;
@@ -2234,7 +2339,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return _this;
 	    }
 	
-	    _createClass(MyDeref, [{
+	    _createClass(ReactViewDeref, [{
 	        key: 'notify',
 	        value: function notify() {
 	            this._notifyObservers();
@@ -2247,7 +2352,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'dispose',
 	        value: function dispose() {
-	            _get(MyDeref.prototype.__proto__ || Object.getPrototypeOf(MyDeref.prototype), 'dispose', this).call(this);
+	            _get(ReactViewDeref.prototype.__proto__ || Object.getPrototypeOf(ReactViewDeref.prototype), 'dispose', this).call(this);
 	            this._observable.dispose();
 	        }
 	    }, {
@@ -2262,7 +2367,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    }]);
 	
-	    return MyDeref;
+	    return ReactViewDeref;
 	}(ratom.Observable);
 	
 	var SubscriptionMixin = exports.SubscriptionMixin = {
@@ -2282,7 +2387,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    },
 	    observe: function observe(watch) {
 	        if (!this.state.watching.has(watch)) {
-	            var deref = new MyDeref(this, this.state.renderCycle, watch);
+	            var deref = new ReactViewDeref(this, this.state.renderCycle, watch);
 	            this.state.watching.add(deref);
 	            watch.subscribe(deref);
 	            deref.subscribe(this);

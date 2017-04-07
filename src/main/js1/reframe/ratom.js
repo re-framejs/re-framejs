@@ -1,9 +1,6 @@
 import * as Immutable from 'immutable';
 import * as Rx from 'rx';
 
-export const db$ = new Rx.BehaviorSubject(Immutable.Map());
-
-
 const ratomCtx = [];
 let id = 1;
 export function runInCtx(obj, f) {

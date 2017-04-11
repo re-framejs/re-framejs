@@ -11,49 +11,50 @@
 
 How do I switch between different panels of a larger app?
 
-Your `appDb` could have an `:active-panel` key containing an id for the panel being displayed.
+Your `appDb` could have an `active-panel` key containing an id for the panel being displayed.
 
 
 When the user does something navigation-ish (selects a tab, a dropdown or something which changes the active panel), then the associated event and dispatch look like this:
 
-```clj
-(re-frame/reg-event-db
-  :set-active-panel
-  (fn [db [_ value]]
-    (assoc db :active-panel value)))
+```javascript
+reframe.regEventDb(
+    'set-active-panel',
+    (db, [_, value]) => db.set('active-panel', value)
+)
 
-(re-frame/dispatch 
-  [:set-active-panel :panel1])
+reframe.dispatch(['set-active-panel', 'panel1'])
 ```
 
-A high level reagent view has a subscription to :active-panel and will switch to the associated panel.
+A high level react view has a subscription to active-panel and will switch to the associated panel.
 
-```clj
-(re-frame/reg-sub
-  :active-panel
-  (fn [db _]
-    (:active-panel db)))
+```javascript
+reframe.regSub(
+    'active-panel',
+    (db, _) => db.get('active-panel')
+)
 
-(defn panel1
- []
- [:div  {:on-click #(re-frame/dispatch [:set-active-panel :panel2])}
-        "Here" ])
+const Panel1 = reframe.view('Panel1', function() {
+    return <div onClick={() => reframe.dispatch(['set-active-panel', 'panel2'])}>Here</div>
+})
 
-(defn panel2
- []
- [:div "There"])
+const Panel2 = reframe.view('Panel2', function() {
+    return <div>There</div>
+})
 
-(defn high-level-view 
-  []
-  (let [active  (re-frame/subscribe [:active-panel])]
-    (fn []
-      [:div
-       [:div.title   "Heading"]
-       (condp = @active                ;; or you could look up in a map
-         :panel1   [panel1]
-         :panel2   [panel2])])))
+const HighLevelView = reframe.view('HighLevelView', function() {
+    const active = this.derefSub(['active-panel']);
+    let panel = <div/>;
+    if (active === 'panel1') {
+        panel = Panel1();
+    } else if (active === 'panel2') {
+        panel = Panel2();
+    }
+    return <div>
+        <div class="title">Heading</div>
+        {panel}
+    </div>
+})
 ```
-
 
 Continue to [Namespaced Keywords](Namespaced-Keywords.md) to reduce clashes on ids.
 

@@ -29,7 +29,7 @@ export const doFx = toInterceptor({
 /**
  *
  * :dispatch-later
- *
+ *f
  * `dispatch` one or more events after given delays. Expects a collection
  * of maps with two keys:  :`ms` and `:dispatch`
  *

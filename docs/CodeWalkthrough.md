@@ -85,18 +85,18 @@ So, at the top, we start like this:
 ## Data Schema
 
 Now, normally, I'd strongly recommended you write a quality schema
-for your application state (the data stored in `app-db`). But,
+for your application state (the data stored in `appDb`). But,
 here, to minimise cognitive load, we'll cut that corner.
 
 But ... we can't cut it completely. You'll still need an
-informal description, and here it is ... for this app `app-db` will contain
+informal description, and here it is ... for this app `appDb` will contain
 a two-key map like this:
 ```cljs
 {:time       (js/Date.)  ;; current time for display
  :time-color "#f88"}     ;; the colour in which the time should be be shown
 ```
 
-re-frame itself owns/manages `app-db` (see FAQ #1), and it will
+re-frame itself owns/manages `appDb` (see FAQ #1), and it will
 supply the value within it (a two-key map in this case)
 to your various handlers as required.
 
@@ -181,11 +181,11 @@ In this application, 3 kinds of event are dispatched:
 
 Handler functions take `coeffects` (input args) and return `effects`.
 
-Handlers can be registered via either `reg-event-fx`
-or `reg-event-db`  (`-fx` vs `-db`): 
+Handlers can be registered via either `regEventFx`
+or `regEventDb`  (`-fx` vs `-db`): 
 
-  - `reg-event-fx` can take multiple `coeffects` and can return multiple `effects`, while 
-  - `reg-event-db` allows you to write simpler handlers in the common case where you want 
+  - `regEventFx` can take multiple `coeffects` and can return multiple `effects`, while 
+  - `regEventDb` allows you to write simpler handlers in the common case where you want 
   them to take only one `coeffect` - the current app state - and return one `effect` - the 
   updated app state.
 
@@ -193,7 +193,7 @@ Because of its simplicity, we'll be using the latter here.
 
 ### reg-event-db
 
-We register event handlers using re-frame's `reg-event-db`:
+We register event handlers using re-frame's `regEventDb`:
 
 ```clj
 (rf/reg-event-db
@@ -201,7 +201,7 @@ We register event handlers using re-frame's `reg-event-db`:
   the-event-handler-fn)
 ```
 The handler function you provide should expect two arguments:
-   - `db`, the current application state  (the value contained in `app-db`)
+   - `db`, the current application state  (the value contained in `appDb`)
    - `v`,  the event vector
     
 So, your function will have a signature like this: `(fn [db v] ...)`. 
@@ -213,7 +213,7 @@ modified version of `db` (or an unmodified one, if there are to be no changes to
 ### :initialize
 
 On startup, application state must be initialized. We
-want to put a sensible value into `app-db`, which starts out containing `{}`.
+want to put a sensible value into `appDb`, which starts out containing `{}`.
 
 So a `(dispatch [:initialize])` will happen early in the 
 app's life (more on this below), and we need to write an `event handler`
@@ -306,7 +306,7 @@ source data from other subscriptions. So it is possible to
 create a tree of dependencies. 
  
 The Views (Domino 5) are the leaves of this tree.  The tree's 
-root is `app-db` and the intermediate nodes between the two 
+root is `appDb` and the intermediate nodes between the two 
 are computations being performed by the query functions of Domino 4.
 
 Now, the two examples below are trivial. They just extract part of the application
@@ -384,7 +384,7 @@ Now, `greet` is pretty simple because it only has the "Hiccup Out" part.  There'
 ### Subscribing
 
 To render the DOM representation of some part of the app state, view functions must query 
-for that part of `app-db`, and that means using `subscribe`.
+for that part of `appDb`, and that means using `subscribe`.
 
 `subscribe` is always called like this:
 ```Clojure
@@ -419,7 +419,7 @@ This view function renders the clock:
        (clojure.string/split " ")
        first)])
 ```
-As you can see, it uses `subscribe` twice to obtain two pieces of data from `app-db`. 
+As you can see, it uses `subscribe` twice to obtain two pieces of data from `appDb`. 
 If either change, re-frame will re-run this view function.
 
 And this view function renders the input field:
@@ -451,7 +451,7 @@ Note: `view` functions tend to be organized into a hierarchy, often with data fl
 parameters. So, not every view function needs a subscription. Very often the values passed in from a parent component
 are sufficient.
 
-Note: `view` functions should never directly access `app-db`. Data is only ever sourced via subscriptions.
+Note: `view` functions should never directly access `appDb`. Data is only ever sourced via subscriptions.
 
 ### Components Like Templates?
 
@@ -487,7 +487,7 @@ Nothing happens without an `event`.
 
 When it comes to establishing initial application state, you'll 
 notice the use of `dispatch-sync`, rather than `dispatch`. This is a cheat which ensures that a correct
-structure exists in `app-db` before any subscriptions or event handlers run. 
+structure exists in `appDb` before any subscriptions or event handlers run. 
 
 ## Summary
 

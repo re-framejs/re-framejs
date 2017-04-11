@@ -32,7 +32,7 @@ Steve Grand
 To implement a reactive flow, Reagent provides a `ratom` and a `reaction`.
 re-frame uses both of these building blocks, so let's now make sure we understand them.
 
-`ratoms` behave just like normal ClojureScript atoms. You can `swap!` and `reset!` them, `watch` them, etc.
+`ratoms` behave just like normal ClojureScript atoms. You can `swap!` and `reset` them, `watch` them, etc.
 
 From a ClojureScript perspective, the purpose of an atom is to hold mutable data.  From a re-frame
 perspective, we'll tweak that paradigm slightly and **view a `ratom` as having a value that
@@ -40,7 +40,7 @@ changes over time.**  Seems like a subtle distinction, I know, but because of it
 `ratom` as a Signal. 
 
 A Signal is a value that changes over time.  So it is a stream of values. Each time a ratom gets
-`reset!` that's a new value in the stream. 
+`reset` that's a new value in the stream. 
 
 The 2nd building block, `reaction`, acts a bit like a function. It's a macro which wraps some
 `computation` (a block of code) and returns a `ratom` holding the result of that `computation`.
@@ -56,7 +56,7 @@ of these dereferenced `ratoms` change.
 
 To put that yet another way, a `reaction` detects a `computation's` input Signals (aka input `ratoms`)
 and it will `watch` them, and when, later, it detects a change in one of them,  it will re-run that
-computation, and it will `reset!` the new result of that computation into the `ratom` originally returned.
+computation, and it will `reset` the new result of that computation into the `ratom` originally returned.
 
 So, the `ratom` returned by a `reaction` is itself a Signal. Its value will change over time when
 the `computation` is re-run.
@@ -178,7 +178,7 @@ On the other hand, it is useful to understand exactly how the Reagent Signal gra
 ;; ==>   [:div "Hello " "blah"]    ;; yep, there's the new value
 ```
 
-So, as `n` changes value over time (via a `reset!`), the output of the computation `(greet n)`
+So, as `n` changes value over time (via a `reset`), the output of the computation `(greet n)`
 changes, which in turn means that the value in `hiccup-ratom` changes. Both `n` and
 `hiccup-ratom` are FRP Signals. The Signal graph we created causes data to flow from
 `n` into `hiccup-ratom`.
@@ -223,12 +223,12 @@ The interesting bit is how `some-fn` is written. Here's an example:
   (reaction (get-in @app-db [:some :path])))  ;; returns a reaction
 ```
 Notice:
-  1. `app-db` is a reagent/atom. It is not a value like `reg-sub` gets.
+  1. `appDb` is a reagent/atom. It is not a value like `reg-sub` gets.
   2. it returns a `reaction` which does a computation. It does not return a value like `reg-sub` does.
-  3. Within that `reaction` `app-db` is deref-ed (see use of `@`) 
+  3. Within that `reaction` `appDb` is deref-ed (see use of `@`) 
   
-As a result of point 3, each time `app-db` changes, the wrapped `reaction` will rerun.
-`app-db` is an input signal to that `reaction`. 
+As a result of point 3, each time `appDb` changes, the wrapped `reaction` will rerun.
+`appDb` is an input signal to that `reaction`. 
 
 Unlike `reg-sub`, there is no 3-arity version of `reg-sub-raw`, so there's no way for you to provide an input signals function.
 Instead, even simpler, you can just use `subscribe` within the `reaction` itself. For example:
@@ -239,14 +239,14 @@ Instead, even simpler, you can just use `subscribe` within the `reaction` itself
      (let [a-path-element @(subscribe [:get-path-part])]   ;; <-- subscribe used here
        (get-in @app-db [:some a-path-element]))))
 ```
-As you can see, this `reaction` has two input signals: `app-db` and `(subscribe [:get-path-part])`.  If either changes, 
+As you can see, this `reaction` has two input signals: `appDb` and `(subscribe [:get-path-part])`.  If either changes, 
 the `reaction` will rerun.
 
 In some cases, the returned `reaction` might not even
-use `app-db` and, instead, it might only use `subscribe` to provide input signals. In that case, the 
+use `appDb` and, instead, it might only use `subscribe` to provide input signals. In that case, the 
 registered subscription would belong to "Level 3" of the signal graph (discussed in earlier tutorials).
 
-Remember to deref any use of `app-db` and `subscribe`.  It is a rookie mistake to forget. I do it regularly.
+Remember to deref any use of `appDb` and `subscribe`.  It is a rookie mistake to forget. I do it regularly.
 
 Instead of using `reaction` (a macro), you can use `reagent/make-reaction` (a utility function) which gives you the additional 
 ability to attach an `:on-dispose` handler to the returned reaction, allowing you to do cleanup work when the subscription is no longer needed. 

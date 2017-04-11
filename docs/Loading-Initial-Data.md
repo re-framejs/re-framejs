@@ -6,7 +6,7 @@
 - [1. Register Handlers](#1-register-handlers)
 - [2. Kick Start Reagent](#2-kick-start-reagent)
 - [3. Loading Initial Data](#3-loading-initial-data)
-  - [Getting Data Into `app-db`](#getting-data-into-app-db)
+  - [Getting Data Into `appDb`](#getting-data-into-app-db)
 - [The Pattern](#the-pattern)
 - [Scales Up](#scales-up)
 - [Cheating - Synchronous Dispatch](#cheating---synchronous-dispatch)
@@ -19,11 +19,11 @@
 To bootstrap a re-frame application, you need to:
   1. register handlers
    - subscription  (via `reg-sub`)
-   - events (via `reg-event-db` or `reg-event-fx`)
+   - events (via `regEventDb` or `regEventFx`)
    - effects (via `reg-fx`)
-   - coeffects (via `reg-cofx`)
+   - coeffects (via `regCofx`)
   2. kickstart reagent (views)
-  3. Load the right initial data into `app-db` which might be a `merge` of:
+  3. Load the right initial data into `appDb` which might be a `merge` of:
    - Some default values
    - Values stored in LocalStorage
    - Values obtained via service calls to server
@@ -66,7 +66,7 @@ component creation.  The full DOM tree will be rendered.
 ## 3. Loading Initial Data 
 
 Let's rewrite our `main-panel` component to use a subscription. In effect, 
-we want it to source and render some data held in `app-db`.  
+we want it to source and render some data held in `appDb`.  
 
 First, we'll create the subscription handler:
 ```Clojure
@@ -88,16 +88,16 @@ The user of our app will see funny things
 if that `(subscribe [:name])` doesn't deliver good data. But how do we ensure "good data"?
 
 That will require: 
-  1. getting data into `app-db`; and
-  2. not get into trouble if that data isn't yet in `app-db`.  For example, 
+  1. getting data into `appDb`; and
+  2. not get into trouble if that data isn't yet in `appDb`.  For example, 
   the data may have to come from a server and there's latency.
 
-**Note: `app-db` initially contains `{}`**
+**Note: `appDb` initially contains `{}`**
 
-### Getting Data Into `app-db`
+### Getting Data Into `appDb`
 
-Only event handlers can change `app-db`. Those are the rules!! Indeed, even initial 
-values must be put in `app-db` via an event handler. 
+Only event handlers can change `appDb`. Those are the rules!! Indeed, even initial 
+values must be put in `appDb` via an event handler. 
 
 Here's an event handler for that purpose:
 ```Clojure
@@ -109,7 +109,7 @@ Here's an event handler for that purpose:
 ```
 
 You'll notice that this handler does nothing other than to return a ` map`. That map 
-will become the new value within `app-db`.
+will become the new value within `appDb`.
 
 We'll need to dispatch an `:initialise-db` event to get it to execute. `main` seems like the natural place: 
 ```Clojure
@@ -128,9 +128,9 @@ will not be run until sometime after `main` has finished.
 But how long after?  And is there a race condition?  The 
 component `main-panel` (which assumes good data) might be 
 rendered before the `:initialise-db` event handler has 
-put good data into `app-db`. 
+put good data into `appDb`. 
 
-We don't want any rendering (of `main-panel`) until after `app-db` 
+We don't want any rendering (of `main-panel`) until after `appDb` 
 has been correctly initialised. 
 
 Okay, so that's enough of teasing-out the issues. Let's see a 
@@ -202,7 +202,7 @@ Your `:initialised?` test then becomes more like this sketch:
           (:service2-answered? db)))))
 ```
 
-This assumes boolean flags are set in `app-db` when data was loaded from these services.
+This assumes boolean flags are set in `appDb` when data was loaded from these services.
 
 ## Cheating - Synchronous Dispatch
 

@@ -10,11 +10,11 @@ To build a re-frame app, you:
 For simpler apps, you should put code for each layer into separate files:
 ```
 src
-├── core.cljs         <--- entry point, plus history, routing, etc
-├── db.cljs           <--- schema, validation, etc  (data layer)
-├── subs.cljs         <--- subscription handlers  (query layer)
-├── views.cljs        <--- reagent components (view layer)
-└── events.cljs       <--- event handlers (control/update layer)
+├── core.js         <--- entry point, plus history, routing, etc
+├── db.js           <--- schema, validation, etc  (data layer)
+├── subs.js         <--- subscription handlers  (query layer)
+├── views.js        <--- reagent components (view layer)
+└── events.js       <--- event handlers (control/update layer)
 ```
 
 For a living example of this approach, look at the [todomvc example](https://github.com/Day8/re-frame/tree/master/examples/todomvc).
@@ -23,8 +23,8 @@ For a living example of this approach, look at the [todomvc example](https://git
 
 If you adopt this structure there's a gotcha. 
 
-`events.cljs` and `subs.cljs` will never be `required` by any other 
-namespaces. To the Google Closure dependency mechanism it appears as 
+`events.js` and `subs.js` will never be `required` by any other 
+namespaces. To the javascript (webpack) dependency mechanism it appears as 
 if these two namespaces are not needed and it doesn't load them.
 
 And, if the code does not get loaded, the registrations in these namespaces
@@ -43,15 +43,15 @@ relatively independent, you might use this structure:
 ```
 src
 ├── panel-1
-│   ├── db.cljs           <--- schema, validation, etc  (data layer)
-│   ├── subs.cljs         <--- subscription handlers  (query layer)
-│   ├── views.cljs        <--- reagent components (view layer)
-│   └── events.cljs       <--- event handlers (control/update layer)
+│   ├── db.js           <--- schema, validation, etc  (data layer)
+│   ├── subs.js         <--- subscription handlers  (query layer)
+│   ├── views.js        <--- reagent components (view layer)
+│   └── events.js       <--- event handlers (control/update layer)
 ├── panel-2
-│   ├── db.cljs           <--- schema, validation. etc  (data layer)
-│   ├── subs.cljs         <--- subscription handlers  (query layer)
-│   ├── views.cljs        <--- reagent components (view layer)
-│   └── events.cljs       <--- event handlers (control/update layer)
+│   ├── db.js           <--- schema, validation. etc  (data layer)
+│   ├── subs.js         <--- subscription handlers  (query layer)
+│   ├── views.js        <--- reagent components (view layer)
+│   └── events.js       <--- event handlers (control/update layer)
 .
 .
 └── panel-n

@@ -162,7 +162,7 @@ This feature shakes out nicely because re-frame has a data oriented design.
 The following issue comes up a bit.
 
 You will end up with a bunch of level 1 `reg-sub` which
-look the same (they directly extract a path within `app-db`):
+look the same (they directly extract a path within `appDb`):
 ```clj
 (reg-sub 
    :a 
@@ -199,10 +199,10 @@ code USING the subscription to provide the path.  You have traded some innocuous
 repetition for longer term fragility, and that's not a good trade.
 
 What fragility? Well, the view which subscribes using, say, `(subscribe [:extract-any-path [:a]])` 
-now "knows" about (depends on) the structure within `app-db`.
+now "knows" about (depends on) the structure within `appDb`.
 
-What happens when you inevitably restructure `app-db` and put that `:a` path under
-another high level branch of `app-db`?  You will have to run around all the views,
+What happens when you inevitably restructure `appDb` and put that `:a` path under
+another high level branch of `appDb`?  You will have to run around all the views,
 looking for the paths supplied, knowing which to alter and which to leave alone. 
 Fragile. 
 

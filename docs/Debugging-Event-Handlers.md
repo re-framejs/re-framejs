@@ -3,7 +3,7 @@
 This page describes techniques for debugging re-frame's event handlers.
 
 Event handlers are quite central to a re-frame app.  Only event handlers 
-can update `app-db` to "step" an application "forward" from one state
+can update `appDb` to "step" an application "forward" from one state
 to the next.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -21,14 +21,14 @@ to the next.
 
 ## The `debug` Interceptor
 
-You might wonder: is my event handler making the right changes to `app-db`?  
+You might wonder: is my event handler making the right changes to `appDb`?  
 
 During development, the built-in `debug` interceptor can help. 
 It writes to `console.log`:
   1. the event being processed, for example:   `[:attempt-world-record true]`
   2. the changes made to `db` by the handler in processing the event
 
-`debug` uses `clojure.data/diff` to compare `app-db` 
+`debug` uses `clojure.data/diff` to compare `appDb` 
 before and after the handler ran, showing  what changed. 
 
 [clojure.data/diff returns a triple](https://clojuredocs.org/clojure.data/diff) 
@@ -113,7 +113,7 @@ nils are removed.
 
 ## 3. Checking DB Integrity
 
-Always have a detailed schema for the data in `app-db`!
+Always have a detailed schema for the data in `appDb`!
 
 Why?
 
@@ -126,14 +126,14 @@ or, perhaps, [a Prismatic Schema](https://github.com/Prismatic/schema).
 
 
 **Second** a good spec allows you to assert the integrity and correctness of 
-the data in `app-db`.  Because all the data is in one place, that means you 
+the data in `appDb`.  Because all the data is in one place, that means you 
 are asserting the integrity of ALL the data in your app, at one time. 
 
 When should we do this?  Ideally every time a change is made!  
 
 Well, it turns out that only event handlers can change the value in 
-`app-db`, so only an event handler could corrupt it. So, we'd like to 
-**recheck the integrity of `app-db` immediately 
+`appDb`, so only an event handler could corrupt it. So, we'd like to 
+**recheck the integrity of `appDb` immediately 
 after *every* event handler has run**.
 
 This allows us to catch any errors very early, easily assigning blame (to the rouge event handler).  
@@ -173,14 +173,14 @@ We'll use the built-in  `after` Interceptor factory function:
                            (when ^boolean goog.DEBUG (after db/valid-schema?))]) ;; <-- new
 ```
 
-Now, the instant a handler messes up the structure of `app-db` you'll be alerted.  But this overhead won't be there in production.
+Now, the instant a handler messes up the structure of `appDb` you'll be alerted.  But this overhead won't be there in production.
 
 ### Too Much Repetition - Part 2
 
 Above we discussed a way of "factoring out" common interceptors into `standard-interceptors`. 
 
 But there's a 2nd way to ensure that all event handlers get certain Interceptors: 
-you write a custom registration function -- a replacement for `reg-event-db` -- like this:
+you write a custom registration function -- a replacement for `regEventDb` -- like this:
 ```clj 
 (defn my-reg-event-db          ;; alternative to reg-event-db
   ([id handler-fn] 

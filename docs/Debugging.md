@@ -41,7 +41,7 @@ With re-frame, step 3 happens like this:
 
 > 3.1. a `(dispatch [:event-id ....])` happens  (that's how events are initiated)
 
-> 3.2. an `Event Handler` is run (along with interceptors), changing the value in `app-db`.
+> 3.2. an `Event Handler` is run (along with interceptors), changing the value in `appDb`.
 
 > 3.3. one or more `subscriptions` fire (because of 3.2)
 
@@ -201,9 +201,9 @@ return large values, then you will be asking clairvoyant to push/log a LOT
 of data into the js/console. This can take a while and might mean devtools 
 takes a lot of RAM.  
 
-For example, if your `app-db` was big and complicated, you might use `path` 
-middleware to "narrow" that part of `app-db` passed into your event handler 
-because logging all of `app-db` to js/console might take a while (and not 
+For example, if your `appDb` was big and complicated, you might use `path` 
+middleware to "narrow" that part of `appDb` passed into your event handler 
+because logging all of `appDb` to js/console might take a while (and not 
 be that useful).
 
 

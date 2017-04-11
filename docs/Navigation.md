@@ -11,7 +11,7 @@
 
 How do I switch between different panels of a larger app?
 
-Your `app-db` could have an `:active-panel` key containing an id for the panel being displayed.
+Your `appDb` could have an `:active-panel` key containing an id for the panel being displayed.
 
 
 When the user does something navigation-ish (selects a tab, a dropdown or something which changes the active panel), then the associated event and dispatch look like this:

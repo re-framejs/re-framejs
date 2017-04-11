@@ -33,7 +33,7 @@ make side effects a noop in event replays.
 
 ### Where Effects Come From
 
-When an event handler is registered via `reg-event-fx`, it must return effects.
+When an event handler is registered via `regEventFx`, it must return effects.
 
 Like this:  
 ```clj
@@ -60,7 +60,7 @@ Here's the two instructions from the example above:
  :dispatch [:do-something-else 3]}     ;; dispatch this event
 ```
 
-The `:db` `key` instructs that "app-db" should be `reset!` to the
+The `:db` `key` instructs that "app-db" should be `reset` to the
 `value` supplied.
 
 And the `:dispatch` `key` instructs that an event should be
@@ -160,7 +160,7 @@ So, yeah, simple ... and, because of it, I can almost guarantee there's no bug i
 An effects map does not need to include the `effect key` `:db`. 
 
 It is perfectly valid for an event handler 
-to not change `app-db`. 
+to not change `appDb`. 
 
 In fact, it is perfectly valid for an event handler to return 
 an effects map of `{}`.  Slightly puzzling, but not a problem.  
@@ -169,8 +169,8 @@ an effects map of `{}`.  Slightly puzzling, but not a problem.
 
 A silently inserted interceptor.
 
-Whenever you register an event handler via __either__ `reg-event-db` 
-or `reg-event-fx`, an interceptor, cunningly named `do-fx`,  
+Whenever you register an event handler via __either__ `regEventDb` 
+or `regEventFx`, an interceptor, cunningly named `do-fx`,  
 is inserted at the beginning of the chain. 
 
 Example: if your event handler registration looked like this:
@@ -183,7 +183,7 @@ Example: if your event handler registration looked like this:
 ```
 
 While it might look like you have registered with 2 interceptors, 
-`reg-event-fx` will make it 3: 
+`regEventFx` will make it 3: 
 ```clj 
 [do-fx debug (path :right)]
 ```
@@ -204,7 +204,7 @@ registered "effect handlers" for each.
 > grooming today, including that you forgot to clean your teeth. Again.
 
 If ever you want to take control of the way effect handling is done, 
-create your own alternative to `reg-event-fx` and, in it, inject
+create your own alternative to `regEventFx` and, in it, inject
 your own version of the `do-fx` interceptor at the front 
 of the interceptor chain.  It is only a few lines of code. 
 

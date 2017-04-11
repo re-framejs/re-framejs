@@ -22,7 +22,7 @@ Are you are using the `re-frame.core/debug` Interceptor?
 You should be, it's useful. __But__ you do need to be aware of its possible performance implications.  
 
 `debug` reports what's changed after an event handler has run by using 
-`clojure.data/diff` to do deep, CPU intensive diff on `app-db`. 
+`clojure.data/diff` to do deep, CPU intensive diff on `appDb`. 
 That diff could be taking a while, and leading to apparent performance problems.
 
 The good news is this really isn't a production problem.  `debug` should only be 
@@ -166,7 +166,7 @@ by what you find is happening.
 Be aware that tracing adds its own performance drag - there's the 
 overhead of all that stuff getting written on the js console. 
 Especially if the data getting traced is big - for example, 
-tracing all of `app-db` in the console can take a while and force 
+tracing all of `appDb` in the console can take a while and force 
 Chrome devtools to take masses of RAM.  So you may want to selectively 
 add tracing when poking about. 
 

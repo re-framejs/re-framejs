@@ -1,6 +1,6 @@
 ### Question
 
-How can I inspect the contents of `app-db`?  Perhaps from figwheel.
+How can I inspect the contents of `appDb`?  Perhaps from figwheel.
 
 ### Short Answer
 
@@ -15,10 +15,10 @@ If not, stop everything and immediately make that happen.
 
 Are you sure you need to?
 
-First, you seldom want to inspect all of `app-db`. 
+First, you seldom want to inspect all of `appDb`. 
 And, second, inspecting via a REPL might be clumsy. 
 
-Instead, you probably want to inspect a part of `app-db`. __And__ you probably want 
+Instead, you probably want to inspect a part of `appDb`. __And__ you probably want 
 to inspect it directly in the GUI itself, not off in a REPL. 
 
 Here is a useful technique from @escherize. Add something like this to 

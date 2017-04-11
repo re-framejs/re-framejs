@@ -47,9 +47,9 @@ then those patterns will repeat themselves. <br>
 ## What is the problem?
 
 First, we decided to build our SPA apps with ClojureScript, then we
-chose [Reagent], then we had a problem. It was mid 2014.
+chose [React], then we had a problem. It was mid 2014.
 
-For all its considerable brilliance,  Reagent (+ React)
+For all its considerable brilliance,  React
 delivers only the 'V' part of a traditional MVC framework.
 
 But apps involve much more than V. We build quite complicated
@@ -80,7 +80,7 @@ insider's joke, conference T-Shirt.
 __First__, above all, we believe in the one true [Dan Holmsand], creator of Reagent, and
 his divine instrument: the `ratom`.  We genuflect towards Sweden once a day.
 
-__Second__, we believe in ClojureScript, immutable data and the process of building
+__Second__, we believe in ClojureScript (in this implementation we have to use javascript), immutable data and the process of building
 a system out of pure functions.
 
 __Third__, we believe in the primacy of data, for the reasons described in
@@ -112,7 +112,7 @@ To debug, you need to know this information:
  2. What final `event` then caused your app to error
 
 Well, with re-frame you need to record (have available):
- 1. A recent checkpoint of the application state in `app-db` (perhaps the initial state)
+ 1. A recent checkpoint of the application state in `appDb` (perhaps the initial state)
  2. all the events `dispatch`ed since the last checkpoint, up to the point where the error occurred
 
 Note: that's all just data. **Pure, lovely loggable data.**
@@ -120,14 +120,14 @@ Note: that's all just data. **Pure, lovely loggable data.**
 If you have that data, then you can reproduce the error.
 
 re-frame allows you to time travel, even in a production setting.
-Install the "checkpoint" state into `app-db`
+Install the "checkpoint" state into `appDb`
 and then "play forward" through the collection of dispatched events.
 
 The only way the app "moves forwards" is via events. "Replaying events" moves you
 step by step towards the error causing problem.
 
 This is perfect for debugging assuming, of course, you are in a position to capture
-a checkpoint of `app-db`, and the events since then.
+a checkpoint of `appDb`, and the events since then.
 
 Here's Martin Fowler's [description of Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html).
 
@@ -151,22 +151,22 @@ of a `reduce` takes two arguments:
   1. the current state of the reduction and
   2. the next collection member to fold in
 
-Then notice that `reg-event-db` event handlers take two arguments also:
-  1. `db` - the current state of `app-db`
+Then notice that `regEventDb` event handlers take two arguments also:
+  1. `db` - the current state of `appDb`
   2. `v` - the next event to fold in
 
 Interesting. That's the same as a `combining function` in a `reduce`!!
 
 So now we can introduce the new mental model:  at any point in time,
-the value in `app-db` is the result of performing a `reduce` over
+the value in `appDb` is the result of performing a `reduce` over
 the entire `collection` of events dispatched in the app up until
 that time. The combining function for this reduce is the set of event handlers.
 
-It is almost like `app-db` is the temporary place where this
+It is almost like `appDb` is the temporary place where this
 imagined `perpetual reduce` stores its on-going reduction.
 
 Now, in the general case, this perspective breaks down a bit,
-because of `reg-event-fx` (has `-fx` on the end, not `-db`) which
+because of `regEventFx` (has `Fx` on the end, not `Db`) which
 allows:
   1. Event handlers to produce `effects` beyond just application state
      changes.
@@ -187,7 +187,7 @@ Think about that: shared mutable state (the root of all evil),
 re-imagined as a stream!!  Blew my socks off.
 
 If, by chance, you ever watched that video (you should!), you might then twig to
-the idea that `app-db` is really a derived value ... the video talks
+the idea that `appDb` is really a derived value ... the video talks
 a lot about derived values. So, yes, app-db is a derived value of the `perpetual reduce`.
 
 And yet, it acts as the authoritative source of state in the app. And yet,
@@ -212,10 +212,10 @@ the `event handlers` act like the rules which govern how the state machine
 moves from one logical state to the next.
 
 In the simplest
-case, `app-db` will contain a single value which represents the current "logical state".
-For example, there might be a single `:phase` key which can have values like `:loading`,
-`:not-authenticated` `:waiting`, etc.  Or, the "logical state" could be a function
-of many values in `app-db`.
+case, `appDb` will contain a single value which represents the current "logical state".
+For example, there might be a single `phase` key which can have values like `loading`,
+`not-authenticated` `waiting`, etc.  Or, the "logical state" could be a function
+of many values in `appDb`.
 
 Not every app has lots of logical states, but some do, and if you are implementing
 one of them, then formally recognising it and using a technique like
@@ -257,19 +257,19 @@ how are the domino functions **composed**?
 
 At the language level,
 Uncle Alonzo and Uncle John tell us how a function like `count` composes:   
-```clj
-(str (count (filter odd?  [1 2 3 4 5])))
+```javascript
+str(count(filter(isOdd, [1,2,3,4,5])))
 ```
 We know when `count` is called, and with what
 argument, and how the value it computes becomes the arg for a further function.
 We know how data "flows" into and out of the functions.
 
 Sometimes, we'd rewrite this code as:
-```clj
-(->>  [1 2 3 4 5]
-      (filter odd?)
-      count
-      str)
+```javascript
+let x = [1,2,3,4,5];
+x = filter(isOdd, x);
+x = count(x)
+x = str(data)
 ```
 With this arrangement, we talk of "threading" data
 through functions. **It seems to help our comprehension to frame function
@@ -328,6 +328,7 @@ Next:  [Infographic Overview](EventHandlingInfographic.md)
 [SPAs]:http://en.wikipedia.org/wiki/Single-page_application
 [SPA]:http://en.wikipedia.org/wiki/Single-page_application
 [Reagent]:http://reagent-project.github.io/
+[React]:https://facebook.github.io/react/
 [Dan Holmsand]:https://twitter.com/holmsand
 [Flux]:http://facebook.github.io/flux/docs/overview.html#content
 [Elm]:http://elm-lang.org/

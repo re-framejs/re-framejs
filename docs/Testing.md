@@ -49,14 +49,14 @@ Your unittests will pass in certain values for `db` and `v`, and then ensure it 
 
 ## Event Handlers - Part 2
 
-Event handlers mutate the value in `app-db` - that's their job.  
+Event handlers mutate the value in `appDb` - that's their job.  
 
 I'd recommend defining a [Prismatic Schema](https://github.com/Prismatic/schema) 
-for the value in `app-db` and then checking for correctness after every, 
+for the value in `appDb` and then checking for correctness after every, 
 single event handler. Every single one.
 
 Using `after` middleware, this is easy to arrange. The todomvc example shows how:
-  - [define a Schema](https://github.com/Day8/re-frame/blob/2ba8914d8dd5f0cf2b09d6f3942823a798c2ef5c/examples/todomvc/src/todomvc/db.cljs#L6-L28) for the value in `app-db`
+  - [define a Schema](https://github.com/Day8/re-frame/blob/2ba8914d8dd5f0cf2b09d6f3942823a798c2ef5c/examples/todomvc/src/todomvc/db.cljs#L6-L28) for the value in `appDb`
   - [create some middleware](https://github.com/Day8/re-frame/blob/2ba8914d8dd5f0cf2b09d6f3942823a798c2ef5c/examples/todomvc/src/todomvc/handlers.cljs#L11-L19)
   - [add the middleware](https://github.com/Day8/re-frame/blob/2ba8914d8dd5f0cf2b09d6f3942823a798c2ef5c/examples/todomvc/src/todomvc/handlers.cljs#L46) to your event handlers 
 
@@ -164,17 +164,17 @@ But what if the Component has a subscription (via a [Form-2](https://github.com/
 There's no immediately obvious way to test this as a lovely pure function. Because it is not pure.
 
 Of course, less pure ways are very possible. For example, a plan might be: 
-  1. setup  `app-db` with some values in the right places  (for the subscription)
+  1. setup  `appDb` with some values in the right places  (for the subscription)
   2. call `my-view` (with a parameter) which will return `the renderer`
   3. call `the renderer` (with a parameter) which will return hiccup
   4. check the hiccup structure for correctness. 
    
 Continuing on, in a second phase you could then:
-  5. change the value in `app-db`  (which will cause the subscription to fire)
+  5. change the value in `appDb`  (which will cause the subscription to fire)
   6. call `the renderer` again (hiccup returned). 
   7. check that the hiccup 
 
-Which is all possible, if a little messy, and with one gotcha. After you change the value in `app-db` the subscription won't hold the new value straight away.  It won't get calculated until the next animationFrame.  And the next animationFrame won't happen until you hand back control to the browser. I think.  Untested. Please report back here if you try. And you might also be able to use `reagent.core/flush` to force the view to be updated.  
+Which is all possible, if a little messy, and with one gotcha. After you change the value in `appDb` the subscription won't hold the new value straight away.  It won't get calculated until the next animationFrame.  And the next animationFrame won't happen until you hand back control to the browser. I think.  Untested. Please report back here if you try. And you might also be able to use `reagent.core/flush` to force the view to be updated.  
 
 ## Components - Part 2B
 

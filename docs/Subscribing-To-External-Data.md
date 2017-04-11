@@ -24,18 +24,18 @@ In [Talking To Servers](Talking-To-Servers.md) we learned how to
 communicate with servers using both pure and effectful handlers. 
 This is great, but what if you want to 
 query external data using subscriptions the 
-same way you query data stored in `app-db`? This tutorial will show you how.
+same way you query data stored in `appDb`? This tutorial will show you how.
 
 ### There Can Be Only One!!
 
-`re-frame` apps have a single source of data called `app-db`.
+`re-frame` apps have a single source of data called `appDb`.
 
-The `re-frame` README asks you to imagine `app-db` as something of an in-memory database. You 
+The `re-frame` README asks you to imagine `appDb` as something of an in-memory database. You 
 query it (via subscriptions) and transactionally update it (via event handlers). 
 
 ### Components Don't Know, Don't Care
 
-Components never know the structure of your `app-db`, much less its existence. 
+Components never know the structure of your `appDb`, much less its existence. 
 
 Instead, they `subscribe`, declaratively, to 
 data, like this `(subscribe [:something "blah"])`, and that allows Components to 
@@ -54,7 +54,7 @@ luxuriating in remote databases like firebase, rethinkdb, PostgreSQL, Datomic, e
 - data sources that an app must query and mutate.
 
 So, the question is: how would we integrate this kind of remote data into an app when
-re-frame seems to have only one source of data: `app-db`?  
+re-frame seems to have only one source of data: `appDb`?  
 How do we introduce a second or even third source of data?  How should we `subscribe` 
 to this remote data, and how would we `update` it?
 
@@ -106,22 +106,22 @@ will work:
       subscription handler's job to know how it is done.  
       
    2. This query be async - with the results arriving sometime "later". And when they 
-   eventually arrive, the handler must organise for the query results to be placed into `app-db`, 
+   eventually arrive, the handler must organise for the query results to be placed into `appDb`, 
    at some known, particular path. In the meantime, the handler might want to ensure that the absence of 
    results is also communicated to the Component, allowing it to display "Loading ...".
    [The Nine States of Design](https://medium.com/swlh/the-nine-states-of-design-5bfe9b3d6d85#.j52018nod) 
    has some useful information on designing your application for different states that your data might be in.
 
    3. The subscription handler must return something to the Component. It should give back a 
-      `reaction` to that known, particular path within `app-db`, so that when the query results 
+      `reaction` to that known, particular path within `appDb`, so that when the query results 
       eventually arrive, they will flow through into the Component for display.
 
    4. The subscription handler will detect when the Component is destroyed and no longer requires 
       the subscription. It will then clean up, getting rid of those now-unneeded items, and
       sorting out any stateful database connection issues. 
       
-Notice what's happening here.  In many respects, `app-db` is still acting as the single source of data.
-The subscription handler is organising for the right remote data to "flow" into `app-db` at a known, 
+Notice what's happening here.  In many respects, `appDb` is still acting as the single source of data.
+The subscription handler is organising for the right remote data to "flow" into `appDb` at a known, 
 particular path, when it is needed by a Component. And, equally, for this data to be cleaned up when it 
 is no longer required.
 
@@ -153,16 +153,16 @@ A few things to notice:
 3. We do not issue the query via a `dispatch` because, to me, it isn't an event. But we most certainly 
    do handle the arrival of query results via a `dispatch` and associated event handler. That to me 
    is an external event happening to the system. The event handler can curate the arriving data in 
-   whatever way makes sense. Maybe it does nothing more than to `assoc` into an `app-db` path, 
+   whatever way makes sense. Maybe it does nothing more than to `assoc` into an `appDb` path, 
    or maybe this is a rethinkdb changefeed subscription and your event handler will have to collate 
    the newly arriving data with what has previously been returned. Do what 
    needs to be done in that event handler, so that the right data will be put into the right path.
  
 3. We use Reagent's `make-reaction` function to create a reaction which will return 
-   that known, particular path within `app-db` where the query results are to be placed.
+   that known, particular path within `appDb` where the query results are to be placed.
 
 4. We use the `on-dispose` callback on this reaction to do any cleanup work
-   when the subscription is no longer needed. Clean up `app-db`?  Clean up the database connection?
+   when the subscription is no longer needed. Clean up `appDb`?  Clean up the database connection?
 
 
 ### Any Good?
@@ -187,15 +187,15 @@ and then back online, we could organise to reissue all the queries  again
 (with results flowing back into 
 the same known paths), avoiding stale results.
 
-Also, notice that putting ALL interesting data into `app-db` has nice 
+Also, notice that putting ALL interesting data into `appDb` has nice 
 flow on effects. In particular, it means it is available to event handlers, 
 should they need it when servicing events (event handlers get `db` as a parameter, right?).  
-If this item data was held in a separate place, other than `app-db`, 
+If this item data was held in a separate place, other than `appDb`, 
 it wouldn't be available in this useful way.  
 
 ### Warning: Undo/Redo
 
-This technique caches remote data in `app-db`.  Be sure to exclude this 
+This technique caches remote data in `appDb`.  Be sure to exclude this 
 cache area from any undo/redo operations 
 using [the available configuration options](https://github.com/Day8/re-frame-undo#harvesting-and-re-instating)
 
@@ -225,10 +225,10 @@ source the data needed in the new state.
 
 So there's definitely a case for NOT using the approach outlined 
 above and, instead, making event handlers source data and 
-plonk it into a certain part of `app-db` for use by subscriptions. 
+plonk it into a certain part of `appDb` for use by subscriptions. 
 
 In effect, there's definitely an argument that 
-subscriptions should only ever source from `app-db` BUT that it is 
+subscriptions should only ever source from `appDb` BUT that it is 
 event handlers which start and stop the sourcing of data from 
 remote places.  
 

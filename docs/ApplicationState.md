@@ -8,11 +8,12 @@
 ### The Big Ratom
 
 re-frame puts all your application state into one place, which is
-called `app-db`.
+called `appDb`.
 
+<!--
 Ideally, you will provide a spec for this data-in-the-one-place,
 [using a powerful and leverageable schema](http://clojure.org/about/spec).
-
+-->
 Now, this advice is not the slightest bit controversial for 'real' databases, right?
 You'd happily put all your well-formed data into PostgreSQL.
 
@@ -25,12 +26,12 @@ that Clojure data lying around exposed and passive.
 
 But, as Fogus reminds us, data at rest is quite perfect.
 
-In re-frame, `app-db` is one of these:
-```clj
-(def app-db  (reagent/atom {}))    ;; a Reagent atom, containing a map
+In re-frame, `appDb` is one of these:
+```javascript
+const appDb = reframe.atom(Immutable.Map({})); // atom, containing a map
 ```
 
-Although it is a `Reagent atom` (hereafter `ratom`), I'd encourage
+Although it is a `Reactive atom` (hereafter `ratom`), I'd encourage
 you to think of it as an in-memory database. It will contain structured data.
 You will need to query that data. You will perform CRUD
 and other transformations on it. You'll often want to transact on this
@@ -39,14 +40,14 @@ seems a more useful paradigm than plain old map-in-atom.
 
 Further Notes:
 
-1. `app-state` would probably be a more accurate name, but I choose `app-db` instead because
+1. `appState` would probably be a more accurate name, but I choose `appDb` instead because
     I wanted to convey the in-memory database notion as strongly as possible.
-2. In the documentation and code, I make a distinction between `app-db` (the `ratom`) and
+2. In the documentation and code, I make a distinction between `appDb` (the `ratom`) and
    `db` which is the (map) `value` currently stored **inside** this `ratom`. Be aware of that naming as you read code.
-3. re-frame creates and manages an `app-db` for you, so
+3. re-frame creates and manages an `appDb` for you, so
    you don't need to declare one yourself (see the [the first FAQ](FAQs/Inspecting-app-db.md) if you want
    to inspect the value it holds).
-4. `app-db` doesn't actually have to be a `ratom` containing a map.  It could, for example,
+4. `appDb` doesn't actually have to be a `ratom` containing a map.  It could, for example,
    be a [datascript database](https://github.com/tonsky/datascript).  In fact, any database which
    can signal you when it changes would do. We'd love! to be using [datascript database](https://github.com/tonsky/datascript) - so damn cool -
    but we had too much data in our apps. If you were to use it, you'd have to tweak re-frame a bit and use [Posh](https://github.com/mpdairy/posh).
@@ -63,12 +64,12 @@ distributing state across objects, and then ensuring that state is synchronised,
 trying to hide it, which is, when you think about it, quite crazy ... and I did it for years).
 
 2. Because all app state is coalesced into one atom, it can be updated
-with a single `reset!`, which acts like a transactional commit. There is
+with a single `reset`, which acts like a transactional commit. There is
 an instant in which the app goes from one state to the next, never a series
 of incremental steps which can leave the app in a temporarily inconsistent, intermediate state.
 Again, this simplicity causes a certain class of bugs or design problems to evaporate.
 
-3. The data in `app-db` can be given a strong schema
+3. The data in `appDb` can be given a strong schema
 so that, at any moment, we can validate all the data in the application. **All of it!**
 We do this check after every single "event handler" runs (event handlers compute new state).
 And this enables us to catch errors early (and accurately). It increases confidence in the way
@@ -83,7 +84,7 @@ For certain categories of applications (eg: drawing applications) this feature i
 Instead of undo/redo being hard, disruptive and error prone, it becomes trivial.
 **But,** many web applications are not self contained
 data-wise and, instead, are dominated by data sourced from an authoritative, remote database.
-For these applications, re-frame's `app-db` is mostly a local caching
+For these applications, re-frame's `appDb` is mostly a local caching
 point, and being able to do undo/redo its state is meaningless because the authoritative
 source of data is elsewhere.
 
@@ -91,10 +92,10 @@ source of data is elsewhere.
 
 6. The ability to do time travel debugging, even in a production setting. More soon.
 
-
+<!--
 ### Create A Leveragable Schema
 
-You need to create a [spec](http://clojure.org/about/spec) schema for `app-db`. You want that leverage.
+You need to create a [spec](http://clojure.org/about/spec) schema for `appDb`. You want that leverage.
 
 Of course, that means you'll have to learn [spec](http://clojure.org/about/spec) and there's
 some overhead in that, so maybe, just maybe, in your initial experiments, you can
@@ -102,7 +103,7 @@ get away without one. But not for long.  Promise me you'll write a `spec`.  Prom
 
 Soon we'll look at the [todomvc example](https://github.com/Day8/re-frame/tree/master/examples/todomvc)
 which shows how to use a spec.  (Check out `src/db.cljs` for the spec itself, and then in `src/events.cljs` for
-how to write code which checks `app-db` against this spec after every single event has been
+how to write code which checks `appDb` against this spec after every single event has been
 processed.)
 
 Specs are potentially more  leveragable than types. This is a big interesting idea which is not yet mainstream.
@@ -111,7 +112,7 @@ https://www.youtube.com/watch?v=VNTQ-M_uSo8
 
 Also, watch the mighty Rich Hickey (poor audio):<br>
 https://vimeo.com/195711510
-
+-->
 ### How do I inspect it?
 
 See [FAQ #1](FAQs/Inspecting-app-db.md)

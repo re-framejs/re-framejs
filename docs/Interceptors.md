@@ -122,7 +122,7 @@ So `:some-id` is only associated with one thing: a 3-chain of interceptors,
 with the handler wrapped in an interceptor, called say `h`, and put on the 
 end of the other two: `[in1 in2 h]`.  
  
-Except, the registration function itself, `reg-event-db`, actually takes this 3-chain 
+Except, the registration function itself, `regEventDb`, actually takes this 3-chain 
 and inserts its own standard interceptors, called say `std1` and `std2`
 (which do useful things, more soon) at the front,
 so **ACTUALLY**, there's about 5 interceptors in the chain: `[std1 std2 in1 in2 h]`
@@ -193,7 +193,7 @@ data like the `:event` being processed, and the initial state of `db`.
 The handler-returned side effects are put into `:effects` including, 
 but not limited to, new values for `db`.
 
-The first few interceptors in a chain (inserted by `reg-event-db`) 
+The first few interceptors in a chain (inserted by `regEventDb`) 
 have `:before` functions which __prime__ the `:coeffects`
 by adding in `:event`, and `:db`.  Of course, other interceptors can
 add further to `:coeffects`.  Perhaps the event handler needs
@@ -302,8 +302,8 @@ whole `[std1 std2 in1 in2 h]` thing?
 We'll now look at the `h` bit. How does an event handler get wrapped to be an Interceptor?
 
 Reminder - there's two kinds of handler:
-   - the `-db` variety registered by `reg-event-db`
-   - the `-fx` variety registered by `reg-event-fx`
+   - the `-db` variety registered by `regEventDb`
+   - the `-fx` variety registered by `regEventFx`
 
 I'll now show how to wrap the `-db` variety. 
 
@@ -354,7 +354,7 @@ __1.__ When you register an event handler, you can supply a collection of interc
 __2.__ When you are registering an event handler, you are associating an event id with a chain of interceptors including:
   - the ones you supply (optional)
   - an extra one on the end, which wraps the handler itself 
-  - a couple at the beginning of the chain, put there by the `reg-event-db` or `reg-event-fx`. 
+  - a couple at the beginning of the chain, put there by the `regEventDb` or `regEventFx`. 
   
 __3.__ An Interceptor Chain is executed in two stages. First a forwards sweep in which 
   all `:before` functions are called, and then second, a backwards sweep in which the 
@@ -378,7 +378,7 @@ re-frame comes with some built-in Interceptors:
 
 And some Interceptor factories (functions that return Interceptors):
   - __enrich__:  perform additional computations (validations?), after the handler has run. More derived data flowing.
-  - __after__: perform side effects, after a handler has run.  Eg: use it to report if the data in `app-db` matches a schema.   
+  - __after__: perform side effects, after a handler has run.  Eg: use it to report if the data in `appDb` matches a schema.   
   - __path__:  a convenience. Simplifies our handlers. Acts almost like `update-in`.
   
 In addition, [a Library like re-frame-undo](https://github.com/Day8/re-frame-undo) provides an Interceptor 

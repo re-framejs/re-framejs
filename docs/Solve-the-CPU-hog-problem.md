@@ -94,11 +94,11 @@ of time less than, say, 100ms). But with the browser getting a look-in after eac
 
 ### Variations
 
-As we go, the handler could be updating some value in `app-db` which indicates 
+As we go, the handler could be updating some value in `appDb` which indicates 
 progress, and this state would then be rendered into the UI.
 
 At a certain point, when all the work is done, the handler will likely put the
-fruits of its computational labour into `app-db` and clear any flags which might, for example,
+fruits of its computational labour into `appDb` and clear any flags which might, for example,
 cause a modal dialog to be showing progress.  And the process would then be done.
 
 
@@ -107,7 +107,7 @@ cause a modal dialog to be showing progress.  And the process would then be done
 It is a flexible pattern.  For example, it can be tweaked to handle a "Cancel' button ...
 
 If there was a “Cancel” button to be clicked, we might 
-`(dispatch [:cancel-it])` and then have this event’s handler tweak the `app-db`
+`(dispatch [:cancel-it])` and then have this event’s handler tweak the `appDb`
 by adding `:abandonment-required` flags. When a chunk-processing-handler
 next begins, it could check for this `:abandonment-required` flag, and,
 if found, stop the CPU intensive process (and clear the abandonment flags).  
@@ -143,11 +143,11 @@ At this point, you still have a small problem to solve. You want
 the UI to show your modal message before you then hog the CPU for 
 5 seconds.
 
-Updating the UI means altering `app-db`.  Remember, the UI is a 
-function of the data in `app-db`. Only changes to `app-db` cause UI 
+Updating the UI means altering `appDb`.  Remember, the UI is a 
+function of the data in `appDb`. Only changes to `appDb` cause UI 
 changes. 
 
-So, to show that Modal, you’ll need to `assoc` some value into `app-db` 
+So, to show that Modal, you’ll need to `assoc` some value into `appDb` 
 and have that new value change what is rendered in your reagent components.
 
 You might be tempted to do this: 

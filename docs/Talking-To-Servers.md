@@ -18,7 +18,7 @@ This page describes how a re-frame app might "talk" to a backend HTTP server.
 
 We'll assume there's a json-returning server endpoint 
 at "http://json.my-endpoint.com/blah". We want to GET from that 
-endpoint and put a processed version of the returned json into `app-db`. 
+endpoint and put a processed version of the returned json into `appDb`. 
 
 ## Triggering The Request
 
@@ -41,7 +41,7 @@ That `:request-it` event will need to be "handled", which means an event handler
 
 We want this handler to:
   1. Initiate the HTTP GET
-  2. Update a flag in `app-db` which will trigger a modal "Loading ..." message for the user to see
+  2. Update a flag in `appDb` which will trigger a modal "Loading ..." message for the user to see
   
 We're going to create two versions of this event handler.  First, we'll create a
 problematic version of the event handler and then, realising our sins, we'll write
@@ -70,7 +70,7 @@ Here's the event handler:
       {:handler       #(dispatch [:process-response %1])   ;; <2> further dispatch !!
        :error-handler #(dispatch [:bad-response %1])})     ;; <2> further dispatch !!
       
-     ;; update a flag in `app-db` ... presumably to cause a "Loading..." UI 
+     ;; update a flag in `appDb` ... presumably to cause a "Loading..." UI 
      (assoc db :loading? true)))    ;; <3> return an updated db 
 ```
 
@@ -79,10 +79,10 @@ Further Notes:
   2. Notice that the GET callbacks issue a further `dispatch`. Such callbacks 
    should never attempt to close over `db` themselves, or make
    any changes to it because, by the time these callbacks happen, the value 
-   in `app-db` may have changed.  Whereas, if they `dispatch`, then the event 
+   in `appDb` may have changed.  Whereas, if they `dispatch`, then the event 
    handlers looking after the event they dispatch will be given the latest copy of the db.
-  3. event handlers registered using `reg-event-db` must return a new value for 
-   `app-db`.  In our case, we set a flag which will presumably cause a "Loading ..."
+  3. event handlers registered using `regEventDb` must return a new value for 
+   `appDb`.  In our case, we set a flag which will presumably cause a "Loading ..."
    UI to show.
 
 ### Successful GET
@@ -121,7 +121,7 @@ The better solution is, of course, to use an effectful handler. This
 is explained in detail in the previous tutorials: [Effectful Handlers](EffectfulHandlers.md) 
 and [Effects](Effects.md).  
 
-In the 2nd version, we use the alternative registration function, `reg-event-fx` , and we'll use an 
+In the 2nd version, we use the alternative registration function, `regEventFx` , and we'll use an 
 "Effect Handler" supplied by this library 
 [https://github.com/Day8/re-frame-http-fx](https://github.com/Day8/re-frame-http-fx).
 You may soon feel confident enough to write your own.

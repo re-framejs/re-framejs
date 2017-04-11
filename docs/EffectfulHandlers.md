@@ -32,8 +32,8 @@ Yes, a surprising claim.
 Events "happen" when they are dispatched.
 
 So, this makes an event happen: 
-```clj
-(dispatch [:repair-ming-vase true])
+```javascript
+reframe.dispatch(['repair-ming-vase', true]);
 ```
 
 Events are normally triggered by an external agent: the user clicks a button, or a server-pushed 
@@ -60,20 +60,20 @@ complex and error prone part of an app.
 To help wrangle this potential complexity, re-frame's introduction 
 provided you with a simple programming model.
  
-It said you should call `reg-event-db` to associate an event id, 
+It said you should call `regEventDb` to associate an event id, 
 with a function to do the handling: 
-```clj
-(re-frame.core/reg-event-db        ;; <-- call this to register a handler
-    :set-flag                      ;; this is an event id 
-   (fn [db [_ new-value]]          ;; this function does the handling 
-      (assoc db :flag new-value)))
+```javascript
+reframe.regEventDb(                 // <-- call this to register a handler
+    'set-flag',                     // this is an event id 
+    (db, [_, newValue]) =>          // this function does the handling
+        db.set('flag', newValue))
 ```
 
 The function you register, handles events with a given `id`.  
 
 And that handler `fn` is expected to be pure. Given the 
-value in `app-db` as the first argument, and the event (vector)
-as the second argument, it is expected to provide a new value for `app-db`. 
+value in `appDb` as the first argument, and the event (vector)
+as the second argument, it is expected to provide a new value for `appDb`. 
 
 Data in, a computation and data out. Pure.  
 
@@ -83,12 +83,11 @@ This paradigm provides a lovely solution 90% of the time, but there are times
 when it isn't enough. 
 
 Here's an example from the messy 10%. To get its job done, this handler has to side effect: 
-```clj
-(reg-event-db
-   :my-event
-   (fn [db [_ bool]]
-       (dispatch [:do-something-else 3])    ;; oops, side-effect
-       (assoc db :send-spam new-val)))
+```javascript
+regEventDb('my-event', (db, [_, newValue]) => {
+   dispatch(['do-something-else', 3]);              // oops, side-effect
+   return db.set('send-spam', newValue);
+});
 ```
 
 That `dispatch` queues up another event to be processed. It changes the world.
@@ -100,14 +99,16 @@ very shortly after this handler finishes, double tick.
 So, you can "get away with it".  But it ain't pure.
 
 And here's more carnage:
-```clj
-(reg-event-db
-   :my-event
-   (fn [db [_ a]]
-       (GET "http://json.my-endpoint.com/blah"   ;; dirty great big side-effect
-            {:handler       #(dispatch [:process-response %1])
-             :error-handler #(dispatch [:bad-response %1])})  
-       (assoc db :flag true)))
+```javascript
+regEventDb(
+    'my-event',
+    (db, [_, a]) => {
+        $.get('http://json.my-endpoint.com/blah')                   // dirty great big side-effect
+            .done((res) => dispatch(['process-response', res]))
+            .fail((res) => dispatch(['bad-response', res]));
+        return db.set('flag', true);
+    }
+);
 ```
 
 Again, this approach will work. But that dirty great big side-effect doesn't come 
@@ -137,12 +138,14 @@ replay, inserting extra events into it, etc., which ruins the process.
 ### The 2nd Kind Of Problem
 
 And there's the other kind of purity problem:
-```clj
-(reg-event-db
-   :load-localstore
-   (fn [db _]
-     (let [val (js->clj (.getItem js/localStorage "defaults-key"))]  ;; <-- Problem
-       (assoc db :defaults val))))
+```javascript
+regEventDb(
+    'load-localstore',
+    (db, _) => {
+        const val = localStorage.getItem('defaults-key');       // <-- Problem
+        return db.set('defaults', val);
+    }
+)
 ```
 
 You'll notice the event handler obtains data from LocalStore.
@@ -176,11 +179,12 @@ which *do side-effects*, we'll instead get them to *cause side-effects*.
 ### Doing vs Causing
 
 I proudly claim that this event handler is pure:
-```clj
-(reg-event-db
-   :my-event
-   (fn [db _]
-      (assoc db :flag true)))
+```javascript
+regEventDb(
+    'my-event',
+    (db, _) => 
+        db.set('flag', true)
+)
 ```
 
 Takes a `db` value, computes and returns a `db` value. No coeffects or effects. Yep, that's Pure!
@@ -190,35 +194,35 @@ the necessary side-effecting.
 
 Wait on.  What "necessary side-effecting"?
 
-Well, application state is stored in `app-db`, right?  And it is a ratom. And after 
-each event handler runs, it must be `reset!` to the newly returned 
-value. Notice `reset!`.   That, right there, is the "necessary side effecting". 
+Well, application state is stored in `appDb`, right?  And it is a ratom. And after 
+each event handler runs, it must be `reset` to the newly returned 
+value. Notice `reset`.   That, right there, is the "necessary side effecting". 
 
 We get to live in our ascetic functional world because re-frame is 
-looking after the "necessary side-effects" on `app-db`.
+looking after the "necessary side-effects" on `appDb`.
 
 ### Et tu, React?
 
-Turns out it's the same pattern with Reagent/React.
+Turns out it's the same pattern with React.
 
 We get to write a nice pure component, like:
-```clj
-(defn say-hi
-  [name]
-  [:div "Hello " name])
+```javascript
+function sayHi(name) {
+    return <div>Hello { name }</div>;
+}
 ```
-and Reagent/React mutates the DOM for us. The framework is looking 
+and React mutates the DOM for us. The framework is looking 
 after the "necessary side-effects".
 
 ### Pattern Structure
 
-Pause and look back at `say-hi`. I'd like you to view it through the 
+Pause and look back at `sayHi`. I'd like you to view it through the 
 following lens:  it is a pure function which **returns a description 
 of the side-effects required**. It says: add a div element to the DOM.
 
 Notice that the description is declarative. We don't tell React how to do it.
 
-Notice also that it is data. Hiccup is just vectors and maps.
+Notice also that it is data. JSX is just html.
 
 This is a big, important concept.  While we can't get away from certain side-effects, we can 
 program using pure functions which **describe side-effects, declaratively, in data** and 
@@ -238,25 +242,30 @@ From here, two steps:
 So, how would it look if event handlers returned side-effects, declaratively, in data?
 
 Here is an impure, side effecting handler:   
-```clj
-(reg-event-db
-   :my-event
-   (fn [db [_ a]]
-       (dispatch [:do-something-else 3])    ;; <-- Eeek, side-effect
-       (assoc db :flag true)))
+```javascript
+regEventDb(
+    'my-event', 
+    (db, [_, value]) => {
+       dispatch(['do-something-else', 3]);              // <-- Eeek, side-effect
+       return db.set('flag', true);
+    });
 ```
 
 Here it is re-written so as to be pure: 
-```clj
-(reg-event-fx                              ;; <1> 
-   :my-event
-   (fn [{:keys [db]} [_ a]]                ;; <2> 
-      {:db  (assoc db :flag true)          ;; <3> 
-       :dispatch [:do-something-else 3]}))
+```javascript
+regEventFx(                                             // <1>
+    'my-event',
+    (ctx, [_, value]) => {                              // <2>
+        const db = ctx.get('db');                       // <2>
+        return {
+            db: db.set('flag', true),                   // <3>
+            dispatch: ['do-something-else', 3]
+        };
+    });
 ```
 
 Notes: <br>
-*<1>* we're using `reg-event-fx` instead of `reg-event-db` to register  (that's `-db` vs `-fx`) <br>
+*<1>* we're using `regEventFx` instead of `regEventDb` to register  (that's `Db` vs `Fx`) <br>
 *<2>* the first parameter is no longer just `db`.  It is a map from which 
 [we are destructuring db](http://clojure.org/guides/destructuring), i.e.
 it is a map which contains a `:db` key. <br>
@@ -271,26 +280,34 @@ a `dispatch` side-effect.
 ### Another Example
 
 The impure way:
-```clj
-(reg-event-db
-   :my-event
-   (fn [db [_ a]]
-       (GET "http://json.my-endpoint.com/blah"   ;; dirty great big side-effect
-            {:handler       #(dispatch [:process-response %1])
-             :error-handler #(dispatch [:bad-response %1])})  
-       (assoc db :flag true)))
+```javascript
+regEventDb(
+    'my-event',
+    (db, [_, a]) => {
+        $.get('http://json.my-endpoint.com/blah')                   // dirty great big side-effect
+            .done((res) => dispatch(['process-response', res]))
+            .fail((res) => dispatch(['bad-response', res]));
+        return db.set('flag', true);
+    }
+);
 ```
 
 the pure, descriptive alternative:
-```clj
-(reg-event-fx
-   :my-event
-   (fn [{:keys [db]} [_ a]]
-       {:http {:method :get
-               :url    "http://json.my-endpoint.com/blah"
-               :on-success  [:process-blah-response]
-               :on-fail     [:failed-blah]}
-        :db   (assoc db :flag true)}))
+```javascript
+regEventDb(
+    'my-event',
+    (db, [_, a]) => {
+        return {
+            http: {
+                method: 'get',
+                url: 'http://json.my-endpoint.com/blah',
+                onSuccess: ['process-response'],
+                onError: ['bad-response']
+            },
+            db: db.set('flag', true)
+        };
+    }
+);
 ```
 
 Again, the old way **did** a side-effect (Booo!) and the new way **describes**, declaratively,
@@ -301,19 +318,26 @@ More on side effects in a minute, but let's double back to coeffects.
 ### The Coeffects
 
 So far we've written our new style `-fx` handlers like this:
-```clj
-(reg-event-fx
-   :my-event
-   (fn [{:keys [db]} event]   ;; <--  destructuring to get db
-       { ... }))
+```javascript
+regEventFx(
+    'my-event',
+    (ctx, event) => {
+        const db = ctx.get('db');                       // <--  destructuring to get db
+        ...
+    }
+);
 ```
 
+
 It is now time to name that first argument:
-```clj
-(reg-event-fx
-   :my-event
-   (fn [cofx event]       ;;  <--- thy name be cofx
-       { ... }))
+```javascript
+regEventFx(
+    'my-event',
+    (cofx, event) => {
+        const db = cofx.get('db');                       // <--- thy name be cofx
+        ...
+    }
+);
 ```
 
 When you use the `-fx` form of registration, the first argument 
@@ -324,30 +348,39 @@ set of computational resources (data) needed to perform its computation. But how
 This will be explained in an upcoming tutorial, I promise, but for the moment, 
 take it as a magical given. 
 
-One of the keys in `cofx` will likely be `:db` and that will be the value of `app-db`. 
+One of the keys in `cofx` will likely be `db` and that will be the value of `appDb`. 
 
 Remember this impure handler from before:
-```clj
-(reg-event-db            ;;  a -db registration
- :load-localstore
- (fn [db _]              ;; db first argument 
-  (let [defaults (js->clj (.getItem js/localStorage "defaults-key"))]  ;; <--  Eeek!!
-    (assoc db :defaults defaults))))
+```javascript
+regEventDb(
+    'load-localstore',
+    (db, _) => {
+        const val = localStorage.getItem('defaults-key');       // <--  Eeek!!
+        return db.set('defaults', val);
+    }
+)
 ```
 
 It was impure because it obtained an input from other than its arguments. 
 We'd now rewrite it as a pure handler, like this:
-```clj
-(reg-event-fx             ;; notice the -fx
-   :load-localstore
-   (fn [cofx  _]          ;; cofx is a map containing inputs
-     (let [defaults (:local-store cofx)]  ;; <--  use it here
-       {:db (assoc (:db cofx) :defaults defaults)})))  ;; returns effects map
+```javascript
+regEventFx(                                                     // notice the -fx
+    'load-localstore',
+    (cofx, _) => {                                              // cofx is a map containing inputs
+        const 
+            db = cofx.get('db'),
+            defaults = cofx.get('localstore');                 // <--  use it here
+        
+        return {
+            db: db.set('defaults', defaults)                    // returns effects map
+        };
+    }
+)
 ```
 
 So, by some magic, not yet revealed, LocalStore will be queried before 
 this handler runs and the required value from it will be placed into 
-`cofx` under the key `:localstore` for the handler to use.
+`cofx` under the key `localstore` for the handler to use.
 
 That process leaves the handler itself pure because it only sources 
 data from arguments.
@@ -363,18 +396,22 @@ Whereas `-fx` handlers take potentially __many__ coeffects (a map of them) and t
 potentially __many__ effects (a map of them). So, One vs Many. 
 
 Just to be clear, the following two handlers achieve the same thing:
-```clj
-(reg-event-db
-   :set-flag
-   (fn [db [_ new-value]]
-      (assoc db :flag new-value)))
+```javascript
+regEventDb(
+    'set-flag', 
+    (db, [_, newValue]) => 
+        db.set('flag', newValue));
 ```
 vs
-```clj
-(reg-event-fx
-   :set-flag
-   (fn [cofx [_ new-value]]
-      {:db (assoc (:db cofx) :flag new-value)}))
+```javascript
+regEventFx(
+    'set-flag',
+    (cofx, [_, newValue]) => {
+        return {
+            db: db.set('flag', newValue);
+        }
+    }
+);
 ```
 
 Obviously the `-db` variation is simpler and you'd use it whenever you 

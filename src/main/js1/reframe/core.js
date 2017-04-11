@@ -10,6 +10,7 @@ import * as registrar from 'reframe/registrar';
 import * as router from 'reframe/router';
 import * as stdinterceptors from 'reframe/stdinterceptors';
 import * as subs from 'reframe/subs';
+import * as batching from 'reframe/batching';
 // import * as _form from 'reframe/form/core';
 //
 // export const form = _form;
@@ -135,7 +136,9 @@ export const viewV = react.viewV;
 export const viewSP = react.viewSP;
 export const viewSV = react.viewSV;
 export const view = react.viewSV;
-export const render = react.render;
+export const render = batching.flush;
+export const flush = batching.flush;
+
 
 // deprecated
 import {Index} from 'reframe/subindex.js';

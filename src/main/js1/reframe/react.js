@@ -31,13 +31,6 @@ function shouldUpdateByDerefed(watching) {
     return false;
 }
 
-
-export function render() {
-    data.toUpdate.sort(([o1], [o2]) => o1 - o2);
-
-    data.toUpdate.forEach(([_, forceUpdate]) => forceUpdate());
-    data.toUpdate = [];
-}
 // subs.render$
 //     .pausable(pause$)
 //     .subscribe(render);

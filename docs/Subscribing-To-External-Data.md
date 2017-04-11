@@ -38,7 +38,7 @@ query it (via subscriptions) and transactionally update it (via event handlers).
 Components never know the structure of your `appDb`, much less its existence. 
 
 Instead, they `subscribe`, declaratively, to 
-data, like this `(subscribe [:something "blah"])`, and that allows Components to 
+data, like this `subscribe(['something', "blah"])`, and that allows Components to 
 obtain a stream of updates to "something", while knowing nothing about the source of the data. 
 
 ### A 2nd Source
@@ -70,17 +70,19 @@ In your mind's eye, imagine this kind of query against that remote database:
 In `re-frame`, Components always obtain data via a subscription. Always.  
 
 So, our Component which shows items is going to 
-```clj
-(let [items (re-frame/subscribe [:items "see through"]) ...
+```javascript
+const items = reframe.subscribe(['items', 'see through'])...
 ```
 and the subscription handler will deliver them. 
 
 Which, in turn, means our code must have a subscription handler defined:
-```clj
-(re-frame/reg-sub
-  :items
-  (fn [db [_ item-type]
-    ...))
+```javascript
+reframe.regSub(
+    'items',
+    (db, [_, itemType]) => {
+        ...
+    }
+)
 ```
 
 Which is fine ... except we haven't really solved this problem yet, have we?  
@@ -128,40 +130,42 @@ is no longer required.
 ### Some Code
 
 Enough fluffing about with words, here's a code sketch for our subscription handler:
-```clj
-(re-frame/reg-sub-raw
-  :items
-  (fn [app-db [_ type]]
-       (let  [query-token (issue-items-query!
-                            type
-                            :on-success #(re-frame/dispatch [:write-to  [:some :path]]))]
-         (reagent/make-reaction
-           (fn [] (get-in @app-db [:some :path] []))
-           :on-dispose #(do (terminate-items-query! query-token)
-                            (re-frame/dispatch [:cleanup [:some :path]]))))))
+```javascript
+reframe.regSubRaw(
+    'items',
+    (appDb, [_, type]) => {
+        const queryToken = issueItemsQuery(type).done(res => reframe.dispatch(['write-to', ['some', 'path']]));
+        return reframe.reaction(() => {
+            return appDb.deref().getIn(['some', 'path'], Immutable.List());
+        }, {onDispose() {
+            terminateItemsQuery(queryToken);
+            reframe.dispatch(['cleanup', ['some', 'path']]);
+        }});
+    }
+)
 ```
 
 A few things to notice:
 
-1. We are using the low level `reg-sub-raw` to register our handler (and not the more normal `reg-sub`)
-   so we can get an `:on-dispose` callback when the subscription is no longer needed.
-   [See the `reg-sub-raw` docs at the end of this tutorial](SubscriptionFlow.md)
+1. We are using the low level `regSubRaw` to register our handler (and not the more normal `regSub`)
+   so we can get an `onDispose` callback when the subscription is no longer needed.
+   [See the `regSubRaw` docs at the end of this tutorial](SubscriptionFlow.md)
    
-2. You have to write  `issue-items-query!`.  Are you making a Restful GET? 
+2. You have to write  `issueItemsQuery`.  Are you making a Restful GET? 
    Are you writing JSON packets down a websocket?  The query has to be made.
 
 3. We do not issue the query via a `dispatch` because, to me, it isn't an event. But we most certainly 
    do handle the arrival of query results via a `dispatch` and associated event handler. That to me 
    is an external event happening to the system. The event handler can curate the arriving data in 
-   whatever way makes sense. Maybe it does nothing more than to `assoc` into an `appDb` path, 
+   whatever way makes sense. Maybe it does nothing more than to `set` into an `appDb` path, 
    or maybe this is a rethinkdb changefeed subscription and your event handler will have to collate 
    the newly arriving data with what has previously been returned. Do what 
    needs to be done in that event handler, so that the right data will be put into the right path.
  
-3. We use Reagent's `make-reaction` function to create a reaction which will return 
+3. We use reframe's `reaction` function to create a reaction which will return 
    that known, particular path within `appDb` where the query results are to be placed.
 
-4. We use the `on-dispose` callback on this reaction to do any cleanup work
+4. We use the `onDispose` callback on this reaction to do any cleanup work
    when the subscription is no longer needed. Clean up `appDb`?  Clean up the database connection?
 
 
@@ -201,14 +205,14 @@ using [the available configuration options](https://github.com/Day8/re-frame-und
 
 ### Query De-duplication 
 
-In v0.8.0 of re-frame onwards, subscriptions are automatically de-duplicated. 
-
+In re-frame, subscriptions are automatically de-duplicated. 
+<!--
 In prior versions, in cases where the same query is simultaneously issued 
 from multiple places, you'd want to 
 de-duplicate the queries. One possibility is to do this duplication 
-in `issue-items-query!` itself. You can
+in `issueItemsQuery` itself. You can
 `count` the duplicate queries and only clear the data when that count goes to 0. 
-
+-->
 ### Thanks To
 
 @nidu for his valuable review comments and insights
@@ -245,7 +249,7 @@ Sometimes, because of their background with other JS frameworks,
 new re-framians feel like the Components themselves (the views) 
 should have the responsibility of sourcing the data they need. 
 
-They then use React lifecycle methods like `:component-did-mount` 
+They then use React lifecycle methods like `componentDidMount` 
 to load remote data. 
 
 I believe this is absolutely the wrong way to do it. 

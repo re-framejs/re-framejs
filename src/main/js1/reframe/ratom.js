@@ -255,8 +255,14 @@ class Cursor extends Observable {
     }
 }
 
-export function makeReaction(f) {
-    return new Reaction(f);
+export function makeReaction(f, options) {
+    const reaction = new Reaction(f);
+    if (options) {
+        if (options.onDispose) {
+            reaction.addOnDispose(options.onDispose);
+        }
+    }
+    return reaction;
 }
 
 export function makeAtom(value) {

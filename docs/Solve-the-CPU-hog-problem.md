@@ -8,7 +8,7 @@ getting through it will take a while.
 When a handler hogs the CPU, nothing else can happen. Browsers 
 only give us one thread of execution and that CPU-hogging handler 
 owns it, and it isn't giving it up. The UI will be frozen and 
-there will be no processing of any other handlers (eg: `on-success` 
+there will be no processing of any other handlers (eg: `onSuccess` 
 of POSTs), etc, etc. Nothing.
 
 And a frozen UI is a problem.  GUI repaints are not happening. And 
@@ -50,29 +50,38 @@ include something like the following:
 ## A Sketch 
 
 Here's an `-fx` handler which counts up to some number in chunks:
-```clj
-(re-frame.core/reg-event-fx 
-  :count-to
-  (fn 
-    [{db :db} [_ first-time so-far finish-at]]
-    (if first-time
-      ;; We are at the beginning, so:
-      ;;     - modify db, causing popup of Modal saying "Working ..."
-      ;;     - begin iterative dispatch. Give initial version of "so-far"
-      {:dispatch [:count-to false {:counter 0} finish-at]  ;; dispatch to self
-       :db (assoc db :we-are-working true)}
-      (if (> (:counter so-far) finish-at)
-        ;; We are finished:
-        ;;  - take away the state which causes the modal to be up
-        ;;  - store the result of the calculation
-        {:db (-> db
-                 (assoc :fruits-of-labour (:counter so-far)) ;; remember the result
-                 (assoc :we-are-working false))}             ;; no more modal
-        ;; Still more work to do
-        ;;   - run the calculation
-        ;;   - redispatch, passing in new running state
-        (let [new-so-far   (update so-far :counter inc)]
-          {:dispatch [:count-to false new-so-far finish-at]}))))                         
+```javascript
+reframe.regEventFx(
+    'count-do',
+    (cofx, [_, firstTime, soFar, finishAt]) => {
+        const db = cofx.get('db');
+        if (firstTime) {
+            // We are at the beginning, so:
+            //     - modify db, causing popup of Modal saying "Working ..."
+            //     - begin iterative dispatch. Give initial version of "so-far"
+            return {
+                dispatch: ['count-to', false, {counter: 0}, finishAt],  // dispatch to self
+                db: db.set('we-are-working', true)}
+        } else if (soFar.counter > finishAt) {
+            // We are finished:
+            //  - take away the state which causes the modal to be up
+            //  - store the result of the calculation
+            return {
+                db: db
+                        .set('fruits-of-labour', soFar.counter)  // remember the result
+                        .set('we-are-working', false)            // no more modal
+            }
+        } else {
+            // Still more work to do
+            //   - run the calculation
+            //   - redispatch, passing in new running state
+            const newSoFar = {counter: soFar.counter++}
+            return {
+                dispatch: ['count-to', false, newSoFar, finishAt]
+            };
+        }
+    }
+)
 ```
 
 ### Why Does A Redispatch Work?
@@ -107,9 +116,9 @@ cause a modal dialog to be showing progress.  And the process would then be done
 It is a flexible pattern.  For example, it can be tweaked to handle a "Cancel' button ...
 
 If there was a “Cancel” button to be clicked, we might 
-`(dispatch [:cancel-it])` and then have this event’s handler tweak the `appDb`
-by adding `:abandonment-required` flags. When a chunk-processing-handler
-next begins, it could check for this `:abandonment-required` flag, and,
+`dispatch(['cancel-it'])` and then have this event’s handler tweak the `appDb`
+by adding `abandonment-required` flags. When a chunk-processing-handler
+next begins, it could check for this `abandonment-required` flag, and,
 if found, stop the CPU intensive process (and clear the abandonment flags).  
 When the abandonment-flags
 are set, the UI could show "Abandoning process ..." and thus appear responsive 
@@ -151,36 +160,43 @@ So, to show that Modal, you’ll need to `assoc` some value into `appDb`
 and have that new value change what is rendered in your reagent components.
 
 You might be tempted to do this: 
-```clj
-(re-frame.core/reg-event-db
-  :process-x
-  (fn
-   [db event-v]
-   (assoc db :processing-X  true)    ;; hog the CPU
-   (do-long-process-x)))    ;; update state, so reagent components render a modal 
+```javascript
+reframe.regEventDb(
+    'process-x',
+    (db, event) => {
+        db.set('processing-x', true);
+        doLongProcessX(); // update state, so react components render a modal
+    }
+)
 ```
 
 But that is just plain wrong. 
-That `assoc` into `db` is not returned (and it must be for a `-db` handler).  
+That `set` into `db` is not returned (and it must be for a `-db` handler).  
 And, even if that did somehow work, 
-then you continue hogging the thread with `do-long-process-x`.  There's no 
+then you continue hogging the thread with `doLongProcessX`.  There's no 
 chance for any UI updates because the handler never gives up control. This 
 handler owns the thread right through.
 
 Ahhh, you think.  I know what to do!  I'll use that pattern I read 
 about in the Wiki, and `re-dispatch` within an`-fx` handler: 
-```clj
-(re-frame.core/reg-event-fx
-  :process-x
-  (fn 
-    [{db :db} event-v]
-    {:dispatch  [:do-work-process-x]   ;; do processing later, give CPU back to browser.     
-     :db (assoc  db  :processing-X true)})) ;; ao the modal gets rendered
+```javascript
+reframe.regEventFx(
+    'process-x',
+    (cofx, event) => {
+        const db = cofx.get('db');
+        return {
+            dispatch: ['do-work-process-x'],            // do processing later, give CPU back to browser.
+            db: db.set('processing-x', true)            // ao the modal gets rendered
+        }
+    }
+);
 
-(re-frame.core/reg-event-db
-  :do-work-process-x
-  (fn [db _]
-    (do-long-process-x db)))   ;; return a new db, presumably containing work done
+reframe.regEventDb(
+    'do-work-process-x',
+    (db, _) => {
+        return doLongProcessX(db);                      // return a new db, presumably containing work done
+    }
+)
 ```
 
 So close.  But it still won’t work. There's a little wrinkle.

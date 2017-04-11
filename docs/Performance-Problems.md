@@ -18,11 +18,11 @@
 
 This first one is something of a non-problem. 
 
-Are you are using the `re-frame.core/debug` Interceptor?
+Are you are using the `reframe/debug` Interceptor?
 You should be, it's useful. __But__ you do need to be aware of its possible performance implications.  
 
 `debug` reports what's changed after an event handler has run by using 
-`clojure.data/diff` to do deep, CPU intensive diff on `appDb`. 
+`immutablediff/diff` to do deep, CPU intensive diff on `appDb`. 
 That diff could be taking a while, and leading to apparent performance problems.
 
 The good news is this really isn't a production problem.  `debug` should only be 
@@ -35,7 +35,7 @@ good look at what's happening in there.
 
 ## 2. `=` On Big Structures
 
-Reagent uses `=` to compare the previous value of a prop with the 
+Reframe uses `=` to compare the previous value of a prop with the 
 new value of that prop, when it determines if a component needs 
 rerendering. [Make sure you have a good understanding of this.](https://github.com/Day8/re-frame/wiki/When-do-components-update%3F). 
 
@@ -44,8 +44,8 @@ tiny, leaf aspect, then a lot of CPU cycles will be spent doing
 the `=` comparison only to eventually work out that, indeed, the 
 answer is `false`. 
 
-This problem is exacerbated when components return a lot of hiccup, because 
-lots of hiccup normally means lots of props which, in turn, means lots of `=` 
+This problem is exacerbated when components return a lot of jsx, because 
+lots of jsx normally means lots of props which, in turn, means lots of `=` 
 work to do on each of those props. Any rerender with those characteristics 
 could end up chewing a lot of CPU cycles.
 

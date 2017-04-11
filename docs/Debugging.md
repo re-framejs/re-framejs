@@ -39,7 +39,7 @@ When debugging an event driven system, our focus will be step 3.
 
 With re-frame, step 3 happens like this: 
 
-> 3.1. a `(dispatch [:event-id ....])` happens  (that's how events are initiated)
+> 3.1. a `dispatch(['event-id', ....])` happens  (that's how events are initiated)
 
 > 3.2. an `Event Handler` is run (along with interceptors), changing the value in `appDb`.
 
@@ -71,16 +71,17 @@ triggered?  What new values did they then return? And which Reagent
 components then rerendered? What hiccup did they return?  It's all 
 just functions processing data.
 
+<!--
 So, in Clojurescript, how do we observe functions and data?  Well, 
 as luck would have it, ClojureScript is a lisp and it is readily **traceable**.  
-
+-->
 
 ##  How To Trace?
 
 Below, I suggest a particular combination of technologies which, working together,
 will write a trace to the devtools console. Sorry, but there's no fancy 
 SVG dashboard.  We said simple, right?
-
+<!--
 First, use clairvoyant to trace function calls and data flow. We've had 
 a couple of Clairvoyant PRs accepted, and they make it work well for us.
 We've also written a specific Clairvoyant tracer tuned for our re-frame 
@@ -92,11 +93,13 @@ But it is worth it.</s>
 
 Finally, because we want you to easily scan, parse and drill into trace 
 data, we'll be using Chrome devtool's `console.group()` and `console.endGroup()`.
-
+-->
 ## Your browser
-
+<!--
 You'll need to install `clj-devtools` by following these [instructions](https://github.com/binaryage/cljs-devtools).
-
+-->
+You'll need to install []Immutable.js Object formatter](https://chrome.google.com/webstore/detail/immutablejs-object-format/hgldghadipiblonfkkicmgcbbijnpeog)
+<!--
 ## Your Project
 
 Add these to your project.clj `:dependencies`. First up a private fork of clairvoyant.
@@ -105,10 +108,10 @@ Add these to your project.clj `:dependencies`. First up a private fork of clairv
 
 Then the customised tracer for cljs-devtools that includes a colour choice
 [![Clojars Project](http://clojars.org/day8/re-frame-tracer/latest-version.svg)](http://clojars.org/day8/re-frame-tracer)
-
-
+-->
+<!--
 Next, we're going to assume that you have structured you app in the [recommended way](https://github.com/Day8/re-frame/tree/master/examples/todomvc/src/todomvc),
-meaning you have the namespaces `events.cljs`, `subs.cljs` and `views.cljs`.
+meaning you have the namespaces `events.js`, `subs.js` and `views.js`.
 It is the functions within these namespaces that we wish to trace.  
 
 1. At the top of each add these namespaces, add these requires:
@@ -136,36 +139,35 @@ around to suit your needs.
    |    file      | colour|
    |--------------|-------|
    |`handlers.clj`| green |
-   |`subs.cljs`   | brown |
+   |`subs.js`   | brown |
    |`views.clj`   | gold  |
 
    But I still think orange, flared pants are a good look.  So, yeah.  You may end up choosing others. 
-
+-->
 
 ## Say No To Anonymous
 
 To get good quality tracing, you need to provide names for all 
 your functions.  So, don't let handlers be anonymous when registering them. 
 
-For example, make sure you name the renderer in a Form2 component:
-```clj
-(defn my-view
-  []
-  (let [name   (subscribe [:name])]
-    (fn my-view-renderer []                ;;   <--  name it!! 
-      [:div @name])))
+For example, make sure you name the renderer in a component:
+```javascript
+const MyView = reframe.view('MyView', function MyView() {   // <--  name it!!
+    ...
+});
 ```
 
 And name those event handlers:
-```clj
-(reg-event-db
-  :blah
-  [interceptors]
-  (fn blah-handler    ;;   <-- name it
-    [db v]       
-    (assoc db :blah true)))
+```javascript
+regEventDb(
+    'blah',
+    [interceptors],
+    function blahHandler(db, v) {                           // <-- name it
+        ...
+    }
+);
 ```
-
+<!--
 ## IMPORTANT
 
 **By default, our clairvoyant fork does not produce any trace!!** 
@@ -185,7 +187,6 @@ So, just to be clear, if you see no tracing when you are debugging, it
 is almost certainly because you haven't successfully turned on this switch. 
 Your production builds need to nothing because, by default, all trace 
 is compiled out of the code. 
-
 
 ## The result
 
@@ -420,3 +421,4 @@ From @mccraigmccraig we get the following (untested by me, but they look great):
    (code-push/sync)
    db)
 ```
+-->

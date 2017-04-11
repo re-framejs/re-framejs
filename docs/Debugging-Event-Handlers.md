@@ -25,49 +25,54 @@ You might wonder: is my event handler making the right changes to `appDb`?
 
 During development, the built-in `debug` interceptor can help. 
 It writes to `console.log`:
-  1. the event being processed, for example:   `[:attempt-world-record true]`
+  1. the event being processed, for example:   `['attempt-world-record', true]`
   2. the changes made to `db` by the handler in processing the event
 
-`debug` uses `clojure.data/diff` to compare `appDb` 
+`debug` uses `immutablediff` to compare `appDb` 
 before and after the handler ran, showing  what changed. 
 
-[clojure.data/diff returns a triple](https://clojuredocs.org/clojure.data/diff) 
+[immutablediff.diff returns a triple](https://github.com/intelie/immutable-js-diff) 
 , the first two entries of which 
 `debug` will display in `console.log` (the 3rd says what hasn't changed and isn't interesting).
 
-The output produced by `clojure.data/diff` can take some getting used to, 
+The output produced by `immutablediff.diff` can take some getting used to, 
 but you should stick with it -- your effort will be rewarded.
 
 ### Using `debug`
 
 So, you will add this Interceptor like this:
-```clj
-(re-frame.core/reg-event-db
-   :some-id
-   [debug]         ;;  <----  added here! 
-   some-handler-fn)
+```javascript
+reframe.regEventDb(
+    'some-id',
+    [reframe.debug],                    // <----  added here!
+    someHandlerFn
+)
 ```
 
 Except, of course, we need to be more deft - we only want 
 `debug` in development builds. We don't 
-want the overhead of those `clojure.data/diff` calculations in production.
+want the overhead of those `immutablediff.diff` calculations in production.
 So, this is better: 
-```clj
-(re-frame.core/reg-event-db
-   :some-id
-   [(when ^boolean goog.DEBUG debug)]   ;;  <----  conditional! 
-   some-handler-fn)
+```javascript
+reframe.regEventDb(
+    'some-id',
+    [isDebug ? reframe.debug : null],                    // <----  conditional!
+    someHandlerFn
+)
 ```
 
+`isDebug` is a compile time flag. 
+<!--
 `goog.DEBUG` is a compile time constant provided by the `Google Closure Compiler`. 
 It will be `true` when the build within `project.clj` is `:optimization :none` and `false`
 otherwise.
+--->
 
-Ha! I see a problem, you say.  In production, that `when` is going to 
-leave a `nil` in the interceptor vector. So the Interceptor vector will be `[nil]`.  
+Ha! I see a problem, you say.  In production, that `?` is going to 
+leave a `null` in the interceptor vector. So the Interceptor vector will be `[null]`.  
 Surely that's a problem?  
 
-Well, actually, no it isn't. re-frame filters out `nil`. 
+Well, actually, no it isn't. re-frame filters out `null`. 
 
 ### Too Much Repetition - Part 1
 
@@ -79,38 +84,40 @@ business on every single handler?  That would be very repetitive.
 Yes, you will have to put it on each handler.  And, yes, that could be repetitive,  unless 
 you take some steps.
 
-One thing you can do is to define standard interceptors at the top of the `event.cljs` namespace:
-```clj
-(def standard-interceptors  [(when ^boolean goog.DEBUG debug)  another-interceptor])
+One thing you can do is to define standard interceptors at the top of the `event.js` namespace:
+```javascript
+const standardInterceptors = [isDebug ? reframe.debug : null, anotherInterceptor];
 ```
 
 And then, for any one event handler, the code would look like:
-```clj
-(re-frame.core/reg-event-db
-   :some-id
-   standard-interceptors        ;; <--- use the common definition
-   some-handler-fn)
+```javascript
+regEventDb(
+    'some-id',
+    standardInterceptors,                                       // <--- use the common definition
+    someHandlerFn
+)
 ```
 
 or perhaps:
-```clj
-(re-frame.core/reg-event-db
-   :some-id
-   [standard-interceptors specific-interceptor]  ;; mix with something specific
-   some-handler-fn)
+```javascript
+regEventDb(
+    'some-id',
+   [standardInterceptors, specificInterceptor],             // <--- use the common definition
+    someHandlerFn
+)
 ```
 
-So that `specific-interceptor` could be something required for just this one 
+So that `specificInterceptor` could be something required for just this one 
 event handler, and it can be combined the standard ones.  
 
-Wait on! "I see a problem", you say.  `standard-interceptors` is a `vector`, and it 
-is within another `vector` along side `specific-interceptor` - so that's 
+Wait on! "I see a problem", you say.  `standardInterceptors` is a `vector`, and it 
+is within another `vector` along side `specificInterceptor` - so that's 
 nested vectors of interceptors!  
 
 No problem, re-frame uses `flatten` to take out all the nesting - the 
 result is a simple chain of interceptors. And also, as we have discussed,  
 nils are removed.
-
+<!--
 ## 3. Checking DB Integrity
 
 Always have a detailed schema for the data in `appDb`!
@@ -174,57 +181,60 @@ We'll use the built-in  `after` Interceptor factory function:
 ```
 
 Now, the instant a handler messes up the structure of `appDb` you'll be alerted.  But this overhead won't be there in production.
-
+-->
 ### Too Much Repetition - Part 2
 
-Above we discussed a way of "factoring out" common interceptors into `standard-interceptors`. 
+Above we discussed a way of "factoring out" common interceptors into `standardInterceptors`. 
 
 But there's a 2nd way to ensure that all event handlers get certain Interceptors: 
 you write a custom registration function -- a replacement for `regEventDb` -- like this:
-```clj 
-(defn my-reg-event-db          ;; alternative to reg-event-db
-  ([id handler-fn] 
-    (my-reg-event-db id nil handler-fn))
-  ([id interceptors handler-fn]
-    (re-frame.core/reg-event-db 
-        id
-        [(when ^boolean goog.DEBUG debug)
-         (when ^boolean goog.DEBUG (after db/valid-schema?)) 
-         interceptors]
-        handler-fn)))
+```javascript
+function myRegEventDb(id, interceptors, handlerFnd) {
+    reframe.regEventDb(id, 
+        [
+            isDebug ? reframe.debug : null,
+            isDebug ? validSchema : null,
+            interceptors
+        ],
+        handlerFn
+    );
+}
 ```
 
 Notice that it inserts our two standard Interceptors. 
 
 From now on, you can register your event handlers like this and know that the two standard Interceptors have been inserted:
-```clj
-(my-reg-event-db      ;; <-- adds std interceptors automatically
-  :some-id 
-  some-handler-fn)
+```javascript
+myRegEventDb(                                   // <-- adds std interceptors automatically
+    'some-id',
+    [],
+    someHandlerFn
+);
 ```
 
 ### What about the -fx variation?
  
-Above we created `my-reg-event-db` as a new registration function for `-db` handlers. 
+Above we created `myRegEventDb` as a new registration function for `-db` handlers. 
 That's handlers which take `db` and `event` arguments, and return a new `db`.  
 So, they MUST return a new `db` value - which should be validated.  
 
 But what if we tried to do the same for `-fx` handlers, which return instead 
-an `effects` map which may, or may not, contain a `:db`?  Our solution would 
+an `effects` map which may, or may not, contain a `db`?  Our solution would 
 have to allow for the absence of a new `db` value (by doing no validity check, because nothing 
 was being changed). 
 
-```clj 
-(defn my-reg-event-fx          ;; alternative to reg-event-db
-  ([id handler-fn] 
-    (my-reg-event-db id nil handler-fn))
-  ([id interceptors handler-fn]
-    (re-frame.core/reg-event-fx 
-        id
-        [(when ^boolean goog.DEBUG debug)
-         (when ^boolean goog.DEBUG (after #(if % (db/valid-schema? %))))
-         interceptors]
-        handler-fn)))
+```javascript
+function myRegEventFx(id, interceptors, handlerFn) {            // alternative to reg-event-db
+    reframe.regEventFx(
+        id,
+        [
+            isDebug ? reframe.debug : null,
+            isDebug ? reframe.after((cofx) => validSchema(cofx)),
+            interceptors
+        ],
+        handlerFn
+    )
+}
 ```
 
 Actually, it would probably be better to write an alternative `after` which XXX

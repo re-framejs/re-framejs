@@ -10,20 +10,25 @@
 
 As an app gets bigger, you'll tend to get clashes on ids - event-ids, or query-ids (subscriptions), etc. 
  
-One panel will need to `dispatch` an `:edit` event and so will 
+One panel will need to `dispatch` an `edit` event and so will 
 another, but the two panels will have different handlers. 
 So how then to not have a clash? How then to distinguish between 
-one `:edit` event and another?
+one `edit` event and another?
 
 Your goal should be to use event-ids which encode both the event 
-itself (`:edit` ?) and the context (`:panel1` or `:panel2` ?). 
+itself (`edit` ?) and the context (`panel1` or `panel2` ?). 
 
+<!--
 Luckily, ClojureScript provides a nice easy solution: use keywords 
-with a __synthetic namespace__. Perhaps something like `:panel1/edit` and `:panel2/edit`. 
+with a __synthetic namespace__. Perhaps something like `:panel1/edit` and `;panel2/edit`. 
 
 You see, ClojureScript allows the namespace in a keyword to be a total
-fiction. I can have the keyword `:panel1/edit` even though 
+fiction. I can have the keyword `panel1/edit` even though 
 `panel1.cljs` doesn't exist. 
+->>
+
+Luckily, you can use easy solution: use string prefixes. Perhaps something like
+`panel1/edit` and `panel2/edit`.
 
 Naturally, you'll take advantage of this by using keyword namespaces 
 which are both unique and descriptive.

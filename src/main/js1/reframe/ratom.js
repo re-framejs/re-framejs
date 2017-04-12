@@ -32,6 +32,14 @@ export class Observable {
         return this._type + '-' + this._id;
     }
 
+    equals(other) {
+        return this === other;
+    }
+
+    hashCode() {
+        return this._id;
+    }
+
     subscribe(observer) {
         if (!observer.notify) {
             console.warn(observer, observer && observer.id && observer.id(), 'has no callback notify');

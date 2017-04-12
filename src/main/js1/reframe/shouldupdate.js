@@ -1,20 +1,18 @@
 'use strict';
 import {isImmutable, isPrimitive, isObservable} from 'reframe/utils';
 
-function isChanged(entries) {
-    return !entries.every(function ([value, nextValue]) {
-        if (isObservable(value) || isObservable(nextValue)) {
+export function shouldUpdateArgv(props, nextProps) {
+    if (props.length !== nextProps.length) {
+        return true;
+    }
+
+    const maxLength = Math.max(props.length, nextProps.length);
+    for (let i=0; i< maxLength; i++) {
+        if (!Immutable.is(props[i], nextProps[i])) {
             return true;
         }
-
-        if ((isPrimitive(value) && isPrimitive(nextValue))
-            ||
-            (isImmutable(value) && isImmutable(nextValue))) {
-
-            return value === nextValue;
-        }
-        return false;
-    });
+    }
+    return false;
 }
 
 /**
@@ -26,21 +24,16 @@ function isChanged(entries) {
  * @param {array} ignore ignore these keys
  * @returns {boolean} true if component should be rerendered
  */
-export function shouldUpdate(props, nextProps, ignore) {
-    let entries;
-    if (nextProps === props || nextProps.length !== props.length) {
-        return false;
-    }
-    if (ignore && ignore.length > 0) {
-        entries = Object.keys(props)
-            .filter(k => ignore.indexOf(k) === -1)
-            .map(k => [props[k], nextProps[k]]);
-    } else {
-        entries = Object.keys(props).map(k => [props[k], nextProps[k]]);
-    }
-
-    if (entries.length) {
-       return isChanged(entries);
+export function shouldUpdate(props, nextProps, ignore=[]) {
+    const keys1 = props? Object.keys(props) : [];
+    const keys2 = nextProps?Object.keys(nextProps) : [];
+    for (let prop of new Set(keys1.concat(keys2))) {
+        if (ignore.length > 0 && ignore.indexOf(prop) >= 0) {
+            continue;
+        }
+        if (!Immutable.is(props[prop], nextProps[prop])) {
+            return true;
+        }
     }
     return false;
 }

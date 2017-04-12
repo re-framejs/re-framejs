@@ -74,8 +74,8 @@ jhah dasf asf
 
     var rowCount = size,
             colCount = rowCount;
-    var Cell = reframe.viewSV('Cell', function (y, x) {
-        var cell = this.derefSub(['cell', y, x]);
+    var Cell = reframe.view('Cell', function (cell$) {
+        var cell = cell$.deref();
         //var cell = this.deref(this.props.row, r => r.get(this.props.x, Immutable.Map()));
         return React.DOM.td(
                 {className: cell.get('active') ? 'active' : 'inactive'},
@@ -83,24 +83,24 @@ jhah dasf asf
         );
     });
 
-    var Row = reframe.viewP('Row', {
+    var Row = reframe.view('Row', {
         getInitialState: function () {
             return {};
         },
-        render: function () {
+        render: function (row$) {
             var row = [];
             for (var x = 0; x < colCount; x++) {
-                row.push(Cell(this.props.y, x));
+                row.push(Cell(reframe.cursor(row$, [x])));
             }
             return React.DOM.tr.apply(null, [null].concat(row));
         }
     });
 
-    var TableView = reframe.viewP('Table', function () {
-
+    var TableView = reframe.view('Table', function () {
+        const layout = reframe.subscribe(['layout']);
         var rows = [];
         for (var y = 0; y < rowCount; y++) {
-            rows.push(Row({y: y}));
+            rows.push(Row(reframe.cursor(layout, [y])));
         }
 
         return React.DOM.table(null, React.DOM.tbody.apply(null, [null].concat(rows)));

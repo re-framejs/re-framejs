@@ -2,7 +2,7 @@
 
 import * as subs from 'reframe/subs.js';
 import * as React from 'react';
-import {shouldUpdate} from 'reframe/shouldupdate';
+import {shouldUpdate, shouldUpdateArgv} from 'reframe/shouldupdate';
 import * as ratom from 'reframe/ratom';
 import * as batching from 'reframe/batching';
 import {isDebug, isTraceReact} from 'reframe/interop';
@@ -31,30 +31,41 @@ function shouldUpdateByDerefed(watching) {
     return false;
 }
 
+
+export function render() {
+    data.toUpdate.sort(([o1], [o2]) => o1 - o2);
+
+    data.toUpdate.forEach(([_, forceUpdate]) => forceUpdate());
+    data.toUpdate = [];
+}
 // subs.render$
 //     .pausable(pause$)
 //     .subscribe(render);
 
-export let StatelessMixin = {
-    shouldComponentUpdate: function (nextProps, nextState) {
-        return shouldUpdate(this.props, nextProps, ['argv', 'ctx']) || shouldUpdate(this.state, nextState) || shouldUpdate(this.props.argv, nextProps.argv);
-    },
-    getDisplayName: function () {
-        return this.constructor.displayName;
-    },
-    traceReact(message) {
-        if (isTraceReact()) {
-            console.debug(message, this.getDisplayName(), {
-                order: this.state.renderOrder,
-                render: this.state.renderCycle,
-                props: this.props, state: this.state
-            });
+export function StatelessMixin(isArgv) {
+    return {
+        shouldComponentUpdate: function (nextProps, nextState) {
+            const propsUpdate = isArgv ? shouldUpdateArgv(this.props.argv, nextProps.argv) : shouldUpdate(this.props, nextProps, ['ctx']);
+            const stateUpdate = shouldUpdate(this.state, nextState);
+            return propsUpdate || stateUpdate;
+        },
+        getDisplayName: function () {
+            return this.constructor.displayName;
+        },
+        traceReact(message) {
+            if (isTraceReact()) {
+                console.debug(message, this.getDisplayName(), {
+                    order: this.state.renderOrder,
+                    render: this.state.renderCycle,
+                    props: this.props, state: this.state
+                });
+            }
+        },
+        id() {
+            return this.getDisplayName();
         }
-    },
-    id() {
-        return this.getDisplayName();
-    }
-};
+    };
+}
 
 function S4() {
     return (((1 + Math.random()) * 0x10000) | 0).toString(16).substring(1);
@@ -97,90 +108,92 @@ class ReactViewDeref extends (ratom.Observable) {
 }
 
 
-export let SubscriptionMixin = {
-    derefSub(subVec, transform) {
-        return ratom.deref(subs.subscribe(subVec), transform);
-    },
-    getDisplayName: function () {
-        return this.constructor.displayName;
-    },
-    getInitialState: function () {
-        return {
-            watching: new Set(),
-            renderOrder: data.renderOrder++,
-            renderCycle: 0
-        };
-    },
-    observe: function (watch) {
-        if (!this.state.watching.has(watch)) {
-            const deref = new ReactViewDeref(this, this.state.renderCycle, watch);
-            this.state.watching.add(deref);
-            watch.subscribe(deref);
-            deref.subscribe(this);
-            watch.unsubscribe(this);
-        }
-    },
-    id() {
-        return this.getDisplayName();
-    },
-    // unobserve: function(observable) {
-    //     this.state.watching.delete(observable);
-    // },
-    notify: function (dispose) {
-        this.traceReact('Notify');
-        batching.queueRender(this);
-    },
-    tryForceUpdate: function () {
-        if (shouldUpdateByDerefed(this.state.watching)) {
-            this.traceReact('Force update');
-            // console.log('Force update', obj.getDisplayName());
-            this.forceUpdate();
-        }
-    },
-    shouldComponentUpdate: function (nextProps, nextState) {
-        let updateByProps = shouldUpdate(this.props, nextProps, ['argv', 'ctx']) || shouldUpdate(this.props.argv, nextProps.argv),
-            updateByState = shouldUpdate(this.state, nextState, ['watching', 'renderOrder', 'renderCycle']);
-
-        return updateByProps || updateByState;
-    },
-    deref: function (rx, aTransform, aId) {
-        return ratom.deref(rx, aTransform);
-    },
-    unsubscribe: function () {
-        this.state.watching.forEach(watch => {
-            watch.unsubscribe(this);
-            watch.dispose()
-        });
-    },
-    componentWillUpdate: function () {
-        // console.log('Rendering', this.getDisplayName());
-        this.state.renderCycle++;
-        // this.unsubscribe();
-    },
-    componentDidUpdate: function () {
-        for (let watch of this.state.watching) {
-            // console.log(watch._observable.id(), this.state.renderCycle, watch.shouldDispose(this.state.renderCycle), watch);
-            if (watch.shouldDispose(this.state.renderCycle)) {
-                this.state.watching.delete(watch);
+export function SubscriptionMixin(isArgv) {
+    return {
+        derefSub(subVec, transform) {
+            return ratom.deref(subs.subscribe(subVec), transform);
+        },
+        getDisplayName: function () {
+            return this.constructor.displayName;
+        },
+        getInitialState: function () {
+            return {
+                watching: new Set(),
+                renderOrder: data.renderOrder++,
+                renderCycle: 0
+            };
+        },
+        observe: function (watch) {
+            if (!this.state.watching.has(watch)) {
+                const deref = new ReactViewDeref(this, this.state.renderCycle, watch);
+                this.state.watching.add(deref);
+                watch.subscribe(deref);
+                deref.subscribe(this);
                 watch.unsubscribe(this);
-                watch.dispose();
+            }
+        },
+        id() {
+            return this.getDisplayName();
+        },
+        // unobserve: function(observable) {
+        //     this.state.watching.delete(observable);
+        // },
+        notify: function (dispose) {
+            this.traceReact('Notify');
+            batching.queueRender(this);
+        },
+        tryForceUpdate: function () {
+            if (shouldUpdateByDerefed(this.state.watching)) {
+                this.traceReact('Force update');
+                // console.log('Force update', obj.getDisplayName());
+                this.forceUpdate();
+            }
+        },
+        shouldComponentUpdate: function (nextProps, nextState) {
+            let updateByProps = isArgv ? shouldUpdateArgv(this.props.argv, nextProps.argv) : shouldUpdate(this.props, nextProps, ['ctx']),
+                updateByState = shouldUpdate(this.state, nextState, ['watching', 'renderOrder', 'renderCycle']);
+
+            return updateByProps || updateByState;
+        },
+        deref: function (rx, aTransform, aId) {
+            return ratom.deref(rx, aTransform);
+        },
+        unsubscribe: function () {
+            this.state.watching.forEach(watch => {
+                watch.unsubscribe(this);
+                watch.dispose()
+            });
+        },
+        componentWillUpdate: function () {
+            // console.log('Rendering', this.getDisplayName());
+            this.state.renderCycle++;
+            // this.unsubscribe();
+        },
+        componentDidUpdate: function () {
+            for (let watch of this.state.watching) {
+                // console.log(watch._observable.id(), this.state.renderCycle, watch.shouldDispose(this.state.renderCycle), watch);
+                if (watch.shouldDispose(this.state.renderCycle)) {
+                    this.state.watching.delete(watch);
+                    watch.unsubscribe(this);
+                    watch.dispose();
+                }
+            }
+        },
+        componentWillUnmount: function () {
+            markRendered(this);
+            this.unsubscribe();
+        },
+        traceReact(message) {
+            if (isTraceReact()) {
+                console.debug(message, this.getDisplayName(), {
+                    order: this.state.renderOrder,
+                    render: this.state.renderCycle,
+                    props: this.props, state: this.state
+                });
             }
         }
-    },
-    componentWillUnmount: function () {
-        markRendered(this);
-        this.unsubscribe();
-    },
-    traceReact(message) {
-        if (isTraceReact()) {
-            console.debug(message, this.getDisplayName(), {
-                order: this.state.renderOrder,
-                render: this.state.renderCycle,
-                props: this.props, state: this.state
-            });
-        }
-    }
-};
+    };
+}
 
 function createComponentObj(mixins, args) {
     let componentObj;
@@ -249,17 +262,17 @@ function vectorView(mixin, args) {
 }
 
 export function viewP() {
-    return propsView([StatelessMixin], arguments);
+    return propsView([StatelessMixin(false)], arguments);
 }
 
 export function viewV() {
-    return vectorView([StatelessMixin], arguments);
+    return vectorView([StatelessMixin(true)], arguments);
 }
 
 export function viewSP() {
-    return propsView([SubscriptionMixin], arguments);
+    return propsView([SubscriptionMixin(false)], arguments);
 }
 
 export function viewSV() {
-    return vectorView([SubscriptionMixin], arguments);
+    return vectorView([SubscriptionMixin(true)], arguments);
 }

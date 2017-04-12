@@ -59,7 +59,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.pause$ = exports.render = exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
+	exports.pause$ = exports.flush = exports.render = exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
 	exports.toggleDebug = toggleDebug;
 	exports.toggleReactDebug = toggleReactDebug;
 	exports.isDebug = isDebug;
@@ -127,6 +127,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	var _subs = __webpack_require__(13);
 	
 	var subs = _interopRequireWildcard(_subs);
+	
+	var _batching = __webpack_require__(12);
+	
+	var batching = _interopRequireWildcard(_batching);
 	
 	var _subindex = __webpack_require__(23);
 	
@@ -260,7 +264,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var viewSP = exports.viewSP = react.viewSP;
 	var viewSV = exports.viewSV = react.viewSV;
 	var view = exports.view = react.viewSV;
-	var render = exports.render = react.render;
+	var render = exports.render = batching.flush;
+	var flush = exports.flush = batching.flush;
 	
 	// deprecated
 	
@@ -687,6 +692,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return this._type + '-' + this._id;
 	        }
 	    }, {
+	        key: 'equals',
+	        value: function equals(other) {
+	            return this === other;
+	        }
+	    }, {
+	        key: 'hashCode',
+	        value: function hashCode() {
+	            return this._id;
+	        }
+	    }, {
 	        key: 'subscribe',
 	        value: function subscribe(observer) {
 	            if (!observer.notify) {
@@ -1027,8 +1042,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return Cursor;
 	}(Observable);
 	
-	function makeReaction(f) {
-	    return new Reaction(f);
+	function makeReaction(f, options) {
+	    var reaction = new Reaction(f);
+	    if (options) {
+	        if (options.onDispose) {
+	            reaction.addOnDispose(options.onDispose);
+	        }
+	    }
+	    return reaction;
 	}
 	
 	function makeAtom(value) {
@@ -1185,7 +1206,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/**
 	 *
 	 * :dispatch-later
-	 *
+	 *f
 	 * `dispatch` one or more events after given delays. Expects a collection
 	 * of maps with two keys:  :`ms` and `:dispatch`
 	 *
@@ -2183,7 +2204,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.SubscriptionMixin = exports.StatelessMixin = undefined;
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
@@ -2192,6 +2212,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
 	
 	exports.render = render;
+	exports.StatelessMixin = StatelessMixin;
+	exports.SubscriptionMixin = SubscriptionMixin;
 	exports.viewP = viewP;
 	exports.viewV = viewV;
 	exports.viewSP = viewSP;
@@ -2294,26 +2316,30 @@ return /******/ (function(modules) { // webpackBootstrap
 	//     .pausable(pause$)
 	//     .subscribe(render);
 	
-	var StatelessMixin = exports.StatelessMixin = {
-	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
-	        return (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.state, nextState) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv);
-	    },
-	    getDisplayName: function getDisplayName() {
-	        return this.constructor.displayName;
-	    },
-	    traceReact: function traceReact(message) {
-	        if ((0, _interop.isTraceReact)()) {
-	            console.debug(message, this.getDisplayName(), {
-	                order: this.state.renderOrder,
-	                render: this.state.renderCycle,
-	                props: this.props, state: this.state
-	            });
+	function StatelessMixin(isArgv) {
+	    return {
+	        shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
+	            var propsUpdate = isArgv ? (0, _shouldupdate.shouldUpdateArgv)(this.props.argv, nextProps.argv) : (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['ctx']);
+	            var stateUpdate = (0, _shouldupdate.shouldUpdate)(this.state, nextState);
+	            return propsUpdate || stateUpdate;
+	        },
+	        getDisplayName: function getDisplayName() {
+	            return this.constructor.displayName;
+	        },
+	        traceReact: function traceReact(message) {
+	            if ((0, _interop.isTraceReact)()) {
+	                console.debug(message, this.getDisplayName(), {
+	                    order: this.state.renderOrder,
+	                    render: this.state.renderCycle,
+	                    props: this.props, state: this.state
+	                });
+	            }
+	        },
+	        id: function id() {
+	            return this.getDisplayName();
 	        }
-	    },
-	    id: function id() {
-	        return this.getDisplayName();
-	    }
-	};
+	    };
+	}
 	
 	function S4() {
 	    return ((1 + Math.random()) * 0x10000 | 0).toString(16).substring(1);
@@ -2370,115 +2396,117 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return ReactViewDeref;
 	}(ratom.Observable);
 	
-	var SubscriptionMixin = exports.SubscriptionMixin = {
-	    derefSub: function derefSub(subVec, transform) {
-	        return ratom.deref(subs.subscribe(subVec), transform);
-	    },
+	function SubscriptionMixin(isArgv) {
+	    return {
+	        derefSub: function derefSub(subVec, transform) {
+	            return ratom.deref(subs.subscribe(subVec), transform);
+	        },
 	
-	    getDisplayName: function getDisplayName() {
-	        return this.constructor.displayName;
-	    },
-	    getInitialState: function getInitialState() {
-	        return {
-	            watching: new Set(),
-	            renderOrder: data.renderOrder++,
-	            renderCycle: 0
-	        };
-	    },
-	    observe: function observe(watch) {
-	        if (!this.state.watching.has(watch)) {
-	            var deref = new ReactViewDeref(this, this.state.renderCycle, watch);
-	            this.state.watching.add(deref);
-	            watch.subscribe(deref);
-	            deref.subscribe(this);
-	            watch.unsubscribe(this);
-	        }
-	    },
-	    id: function id() {
-	        return this.getDisplayName();
-	    },
-	
-	    // unobserve: function(observable) {
-	    //     this.state.watching.delete(observable);
-	    // },
-	    notify: function notify(dispose) {
-	        this.traceReact('Notify');
-	        batching.queueRender(this);
-	    },
-	    tryForceUpdate: function tryForceUpdate() {
-	        if (shouldUpdateByDerefed(this.state.watching)) {
-	            this.traceReact('Force update');
-	            // console.log('Force update', obj.getDisplayName());
-	            this.forceUpdate();
-	        }
-	    },
-	    shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
-	        var updateByProps = (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['argv', 'ctx']) || (0, _shouldupdate.shouldUpdate)(this.props.argv, nextProps.argv),
-	            updateByState = (0, _shouldupdate.shouldUpdate)(this.state, nextState, ['watching', 'renderOrder', 'renderCycle']);
-	
-	        return updateByProps || updateByState;
-	    },
-	    deref: function deref(rx, aTransform, aId) {
-	        return ratom.deref(rx, aTransform);
-	    },
-	    unsubscribe: function unsubscribe() {
-	        var _this2 = this;
-	
-	        this.state.watching.forEach(function (watch) {
-	            watch.unsubscribe(_this2);
-	            watch.dispose();
-	        });
-	    },
-	    componentWillUpdate: function componentWillUpdate() {
-	        // console.log('Rendering', this.getDisplayName());
-	        this.state.renderCycle++;
-	        // this.unsubscribe();
-	    },
-	    componentDidUpdate: function componentDidUpdate() {
-	        var _iteratorNormalCompletion2 = true;
-	        var _didIteratorError2 = false;
-	        var _iteratorError2 = undefined;
-	
-	        try {
-	            for (var _iterator2 = this.state.watching[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-	                var watch = _step2.value;
-	
-	                // console.log(watch._observable.id(), this.state.renderCycle, watch.shouldDispose(this.state.renderCycle), watch);
-	                if (watch.shouldDispose(this.state.renderCycle)) {
-	                    this.state.watching.delete(watch);
-	                    watch.unsubscribe(this);
-	                    watch.dispose();
-	                }
+	        getDisplayName: function getDisplayName() {
+	            return this.constructor.displayName;
+	        },
+	        getInitialState: function getInitialState() {
+	            return {
+	                watching: new Set(),
+	                renderOrder: data.renderOrder++,
+	                renderCycle: 0
+	            };
+	        },
+	        observe: function observe(watch) {
+	            if (!this.state.watching.has(watch)) {
+	                var deref = new ReactViewDeref(this, this.state.renderCycle, watch);
+	                this.state.watching.add(deref);
+	                watch.subscribe(deref);
+	                deref.subscribe(this);
+	                watch.unsubscribe(this);
 	            }
-	        } catch (err) {
-	            _didIteratorError2 = true;
-	            _iteratorError2 = err;
-	        } finally {
-	            try {
-	                if (!_iteratorNormalCompletion2 && _iterator2.return) {
-	                    _iterator2.return();
-	                }
-	            } finally {
-	                if (_didIteratorError2) {
-	                    throw _iteratorError2;
-	                }
+	        },
+	        id: function id() {
+	            return this.getDisplayName();
+	        },
+	
+	        // unobserve: function(observable) {
+	        //     this.state.watching.delete(observable);
+	        // },
+	        notify: function notify(dispose) {
+	            this.traceReact('Notify');
+	            batching.queueRender(this);
+	        },
+	        tryForceUpdate: function tryForceUpdate() {
+	            if (shouldUpdateByDerefed(this.state.watching)) {
+	                this.traceReact('Force update');
+	                // console.log('Force update', obj.getDisplayName());
+	                this.forceUpdate();
 	            }
-	        }
-	    },
-	    componentWillUnmount: function componentWillUnmount() {
-	        (0, _batching.markRendered)(this);
-	        this.unsubscribe();
-	    },
-	    traceReact: function traceReact(message) {
-	        if ((0, _interop.isTraceReact)()) {
-	            console.debug(message, this.getDisplayName(), {
-	                order: this.state.renderOrder,
-	                render: this.state.renderCycle,
-	                props: this.props, state: this.state
+	        },
+	        shouldComponentUpdate: function shouldComponentUpdate(nextProps, nextState) {
+	            var updateByProps = isArgv ? (0, _shouldupdate.shouldUpdateArgv)(this.props.argv, nextProps.argv) : (0, _shouldupdate.shouldUpdate)(this.props, nextProps, ['ctx']),
+	                updateByState = (0, _shouldupdate.shouldUpdate)(this.state, nextState, ['watching', 'renderOrder', 'renderCycle']);
+	
+	            return updateByProps || updateByState;
+	        },
+	        deref: function deref(rx, aTransform, aId) {
+	            return ratom.deref(rx, aTransform);
+	        },
+	        unsubscribe: function unsubscribe() {
+	            var _this2 = this;
+	
+	            this.state.watching.forEach(function (watch) {
+	                watch.unsubscribe(_this2);
+	                watch.dispose();
 	            });
+	        },
+	        componentWillUpdate: function componentWillUpdate() {
+	            // console.log('Rendering', this.getDisplayName());
+	            this.state.renderCycle++;
+	            // this.unsubscribe();
+	        },
+	        componentDidUpdate: function componentDidUpdate() {
+	            var _iteratorNormalCompletion2 = true;
+	            var _didIteratorError2 = false;
+	            var _iteratorError2 = undefined;
+	
+	            try {
+	                for (var _iterator2 = this.state.watching[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+	                    var watch = _step2.value;
+	
+	                    // console.log(watch._observable.id(), this.state.renderCycle, watch.shouldDispose(this.state.renderCycle), watch);
+	                    if (watch.shouldDispose(this.state.renderCycle)) {
+	                        this.state.watching.delete(watch);
+	                        watch.unsubscribe(this);
+	                        watch.dispose();
+	                    }
+	                }
+	            } catch (err) {
+	                _didIteratorError2 = true;
+	                _iteratorError2 = err;
+	            } finally {
+	                try {
+	                    if (!_iteratorNormalCompletion2 && _iterator2.return) {
+	                        _iterator2.return();
+	                    }
+	                } finally {
+	                    if (_didIteratorError2) {
+	                        throw _iteratorError2;
+	                    }
+	                }
+	            }
+	        },
+	        componentWillUnmount: function componentWillUnmount() {
+	            (0, _batching.markRendered)(this);
+	            this.unsubscribe();
+	        },
+	        traceReact: function traceReact(message) {
+	            if ((0, _interop.isTraceReact)()) {
+	                console.debug(message, this.getDisplayName(), {
+	                    order: this.state.renderOrder,
+	                    render: this.state.renderCycle,
+	                    props: this.props, state: this.state
+	                });
+	            }
 	        }
-	    }
-	};
+	    };
+	}
 	
 	function createComponentObj(mixins, args) {
 	    var componentObj = void 0;
@@ -2555,19 +2583,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function viewP() {
-	    return propsView([StatelessMixin], arguments);
+	    return propsView([StatelessMixin(false)], arguments);
 	}
 	
 	function viewV() {
-	    return vectorView([StatelessMixin], arguments);
+	    return vectorView([StatelessMixin(true)], arguments);
 	}
 	
 	function viewSP() {
-	    return propsView([SubscriptionMixin], arguments);
+	    return propsView([SubscriptionMixin(false)], arguments);
 	}
 	
 	function viewSV() {
-	    return vectorView([SubscriptionMixin], arguments);
+	    return vectorView([SubscriptionMixin(true)], arguments);
 	}
 
 /***/ },
@@ -2585,29 +2613,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	
-	var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"]) _i["return"](); } finally { if (_d) throw _e; } } return _arr; } return function (arr, i) { if (Array.isArray(arr)) { return arr; } else if (Symbol.iterator in Object(arr)) { return sliceIterator(arr, i); } else { throw new TypeError("Invalid attempt to destructure non-iterable instance"); } }; }();
-	
+	exports.shouldUpdateArgv = shouldUpdateArgv;
 	exports.shouldUpdate = shouldUpdate;
 	
 	var _utils = __webpack_require__(17);
 	
-	function isChanged(entries) {
-	    return !entries.every(function (_ref) {
-	        var _ref2 = _slicedToArray(_ref, 2),
-	            value = _ref2[0],
-	            nextValue = _ref2[1];
+	function shouldUpdateArgv(props, nextProps) {
+	    if (props.length !== nextProps.length) {
+	        return true;
+	    }
 	
-	        if ((0, _utils.isObservable)(value) || (0, _utils.isObservable)(nextValue)) {
+	    var maxLength = Math.max(props.length, nextProps.length);
+	    for (var i = 0; i < maxLength; i++) {
+	        if (!Immutable.is(props[i], nextProps[i])) {
 	            return true;
 	        }
-	
-	        if ((0, _utils.isPrimitive)(value) && (0, _utils.isPrimitive)(nextValue) || (0, _utils.isImmutable)(value) && (0, _utils.isImmutable)(nextValue)) {
-	
-	            return value === nextValue;
-	        }
-	        return false;
-	    });
+	    }
+	    return false;
 	}
 	
 	/**
@@ -2619,26 +2641,41 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @param {array} ignore ignore these keys
 	 * @returns {boolean} true if component should be rerendered
 	 */
-	function shouldUpdate(props, nextProps, ignore) {
-	    var entries = void 0;
-	    if (nextProps === props || nextProps.length !== props.length) {
-	        return false;
-	    }
-	    if (ignore && ignore.length > 0) {
-	        entries = Object.keys(props).filter(function (k) {
-	            return ignore.indexOf(k) === -1;
-	        }).map(function (k) {
-	            return [props[k], nextProps[k]];
-	        });
-	    } else {
-	        entries = Object.keys(props).map(function (k) {
-	            return [props[k], nextProps[k]];
-	        });
+	function shouldUpdate(props, nextProps) {
+	    var ignore = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : [];
+	
+	    var keys1 = props ? Object.keys(props) : [];
+	    var keys2 = nextProps ? Object.keys(nextProps) : [];
+	    var _iteratorNormalCompletion = true;
+	    var _didIteratorError = false;
+	    var _iteratorError = undefined;
+	
+	    try {
+	        for (var _iterator = new Set(keys1.concat(keys2))[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+	            var prop = _step.value;
+	
+	            if (ignore.length > 0 && ignore.indexOf(prop) >= 0) {
+	                continue;
+	            }
+	            if (!Immutable.is(props[prop], nextProps[prop])) {
+	                return true;
+	            }
+	        }
+	    } catch (err) {
+	        _didIteratorError = true;
+	        _iteratorError = err;
+	    } finally {
+	        try {
+	            if (!_iteratorNormalCompletion && _iterator.return) {
+	                _iterator.return();
+	            }
+	        } finally {
+	            if (_didIteratorError) {
+	                throw _iteratorError;
+	            }
+	        }
 	    }
 	
-	    if (entries.length) {
-	        return isChanged(entries);
-	    }
 	    return false;
 	}
 
@@ -2795,7 +2832,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var db = (0, _interceptor.getCoeffect)(ctx, 'db'),
 	                event = (0, _interceptor.getCoeffect)(ctx, 'event');
 	
-	            return (0, _interceptor.assocEffect)(ctx, 'db', handlerFn(db, event));
+	            return (0, _interceptor.assocEffect)(ctx, 'db', Immutable.fromJS(handlerFn(db, event)));
 	        }
 	    });
 	}
@@ -2816,7 +2853,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        id: 'fx-handler',
 	        before: function fxHandlerBefore(ctx) {
 	            var event = (0, _interceptor.getCoeffect)(ctx, 'event');
-	            return ctx.set('effects', handlerFn(ctx.get('coeffects'), event));
+	            return ctx.set('effects', Immutable.fromJS(handlerFn(ctx.get('coeffects'), event)));
 	        }
 	    });
 	}

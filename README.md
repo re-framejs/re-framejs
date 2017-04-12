@@ -12,8 +12,7 @@ y'know. Pretty good.
 > -- Terry Pratchett, The Fifth Elephant <br>
 > &nbsp;&nbsp;&nbsp; reflecting on identity, flow and derived values
 
-
-[![npm version](https://img.shields.io/clojars/v/re-frame.svg)](https://www.npmjs.com/package/re-framejs)
+[![npm version](https://img.shields.io/npm/v/re-framejs.svg?style=flat)](https://www.npmjs.com/package/re-framejs)
 [![GitHub license](https://img.shields.io/github/license/Day8/re-frame.svg)](license.txt)
 
 

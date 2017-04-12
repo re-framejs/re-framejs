@@ -59,7 +59,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	Object.defineProperty(exports, "__esModule", {
 	    value: true
 	});
-	exports.pause$ = exports.flush = exports.render = exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
+	exports.markFlushDom = exports.pause$ = exports.flush = exports.render = exports.view = exports.viewSV = exports.viewSP = exports.viewV = exports.viewP = exports.injectCofx = exports.regCofx = exports.regFx = exports.clearSubscriptionCache = exports.subscribe = exports.regSub = exports.onChanges = exports.after = exports.trimv = exports.enrich = exports.path = exports.debug = exports.when = exports.assocCoeffect = exports.assocEffect = exports.getEffect = exports.getCoeffect = exports.enqueue = exports.toInterceptor = exports.dispatchSync = exports.dispatch = exports.db$ = exports.appDb = undefined;
 	exports.toggleDebug = toggleDebug;
 	exports.toggleReactDebug = toggleReactDebug;
 	exports.isDebug = isDebug;
@@ -314,6 +314,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	pause$.subscribe(function (pause) {
 	    return togglePause(pause);
 	});
+	
+	var markFlushDom = exports.markFlushDom = router.markFlushDom;
 
 /***/ },
 /* 1 */
@@ -1241,7 +1243,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *   {:dispatch [:event-id "param"] }
 	 */
 	register('dispatch', function (value) {
-	    if (!Immutable.isList(value)) {
+	    if (!Array.isArray(value)) {
 	        console.error('re-frame: ignoring bad :dispatch value. Expected a vector, but got:', value);
 	    } else {
 	        router.dispatch(value);
@@ -1259,7 +1261,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *
 	 */
 	register('dispatch-n', function (values) {
-	    if (!Immutable.isSeq(values)) {
+	    if (!Array.isArray(values) && values.map(function (v) {
+	        return !Array.isArray(v);
+	    }).filter(Boolean).length > 0) {
 	        console.error('re-frame: ignoring bad :dispatch-n value. Expected a collection, got got:', values);
 	    } else {
 	        values.forEach(function (value) {
@@ -1281,7 +1285,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 *
 	 */
 	register('deregister-event-handler', function (value) {
-	    if (Immutable.isSeq(value)) {
+	    if (Immutable.isSeq(value) || Array.isArray(value)) {
 	        value.forEach(function (v) {
 	            return (0, _registrar.clearHandlers)(kind, v);
 	        });
@@ -1317,6 +1321,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 	
+	exports.markFlushDom = markFlushDom;
 	exports.pause = pause;
 	exports.resume = resume;
 	exports.dispatch = dispatch;
@@ -1395,10 +1400,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	//      which will run event processing after the next Reagent animation frame.
 	//
 	
+	function markFlushDom(event) {
+	    event._flushDom = true;
+	    return event;
+	}
+	
 	var laterFns = {
-	    'flush-dom': function flushDom(f) {
+	    '_flushDom': function _flushDom(f) {
 	        return (0, _interop.afterRender)(function () {
-	            return (0, _interop.nextTick)(f);
+	            return setTimeout(f, 0);
 	        });
 	    },
 	    'yield': _interop.nextTick
@@ -1407,7 +1417,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	function doTrigger(fsm, state, trigger, arg) {
 	    if (trigger === 'pause') {
 	        return ['paused', function (fsm) {
-	            fsm._pause();
+	            fsm._pause(arg);
 	        }];
 	    }
 	
@@ -1448,7 +1458,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }];
 	            } else if (state === 'running' && trigger === 'pause') {
 	                return ['paused', function (fsm) {
-	                    fsm._pause();
+	                    fsm._pause(arg);
 	                }];
 	            } else if (state === 'running' && trigger === 'exception') {
 	                return ['idle', function (fsm) {
@@ -1546,11 +1556,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_runQueue',
 	        value: function _runQueue() {
-	            for (var i = this._queue.length; i > 0; i--) {
+	            var _this = this;
+	
+	            var paused = false;
+	
+	            var _loop = function _loop(i) {
 	                // TODO add later-fns
-	                this._process1stEventInQueue();
+	                var event = _this._queue[0];
+	                var later = Object.keys(laterFns).map(function (fn) {
+	                    return event[fn] ? laterFns[fn] : false;
+	                }).filter(Boolean)[0];
+	                if (later) {
+	                    _this.trigger('pause', later);
+	                    paused = true;
+	                    return 'break';
+	                } else {
+	                    _this._process1stEventInQueue();
+	                }
+	            };
+	
+	            for (var i = this._queue.length; i > 0; i--) {
+	                var _ret = _loop(i);
+	
+	                if (_ret === 'break') break;
 	            }
-	            this.trigger('finish-run', null);
+	            if (!paused) {
+	                this.trigger('finish-run', null);
+	            }
 	        }
 	    }, {
 	        key: '_exception',
@@ -1561,23 +1593,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: '_pause',
 	        value: function _pause(laterFn) {
-	            // console.log('pause');
-	            // laterFn(() => this.trigger('resume', null));
+	            var _this2 = this;
+	
+	            // console.log('pause', laterFn);
+	            if (laterFn) {
+	                laterFn(function () {
+	                    return _this2.trigger('resume', null);
+	                });
+	            }
 	        }
 	    }, {
 	        key: '_callPostEventCallbacks',
 	        value: function _callPostEventCallbacks(event) {
-	            var _this = this;
+	            var _this3 = this;
 	
 	            Object.keys(this._postEventCallbacks).forEach(function (key) {
-	                _this._postEventCallbacks[key](event, [].concat(_toConsumableArray(_this._queue)));
+	                _this3._postEventCallbacks[key](event, [].concat(_toConsumableArray(_this3._queue)));
 	            });
 	        }
 	    }, {
 	        key: '_resume',
 	        value: function _resume() {
 	            // console.log('resume');
-	            // this._process1stEventInQueue();
+	            if (this._queue[0]) {
+	                this._process1stEventInQueue();
+	            }
 	            this._runQueue();
 	        }
 	    }]);
@@ -1693,8 +1733,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var nextTick = exports.nextTick = batching.nextTick;
 	
-	function afterRender() {
-	    throw new Error('not implemented yet');
+	function afterRender(f) {
+	    batching.doAfterRender(f);
 	}
 	
 	function reagentId(value) {
@@ -2856,7 +2896,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var db = (0, _interceptor.getCoeffect)(ctx, 'db'),
 	                event = (0, _interceptor.getCoeffect)(ctx, 'event');
 	
-	            return (0, _interceptor.assocEffect)(ctx, 'db', Immutable.fromJS(handlerFn(db, event)));
+	            return (0, _interceptor.assocEffect)(ctx, 'db', handlerFn(db, event));
 	        }
 	    });
 	}
@@ -2877,7 +2917,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        id: 'fx-handler',
 	        before: function fxHandlerBefore(ctx) {
 	            var event = (0, _interceptor.getCoeffect)(ctx, 'event');
-	            return ctx.set('effects', Immutable.fromJS(handlerFn(ctx.get('coeffects'), event)));
+	            return ctx.set('effects', Immutable.Map(handlerFn(ctx.get('coeffects'), event)));
 	        }
 	    });
 	}

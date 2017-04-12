@@ -63,7 +63,7 @@ register('dispatch-later', values => {
  *   {:dispatch [:event-id "param"] }
  */
 register('dispatch', value => {
-    if (!Immutable.isList(value)) {
+    if (!Array.isArray(value)) {
         console.error('re-frame: ignoring bad :dispatch value. Expected a vector, but got:', value);
     } else {
         router.dispatch(value);
@@ -81,7 +81,7 @@ register('dispatch', value => {
  *
  */
 register('dispatch-n', values => {
-    if (!Immutable.isSeq(values)) {
+    if (!Array.isArray(values) && values.map(v => !Array.isArray(v)).filter(Boolean).length > 0) {
         console.error('re-frame: ignoring bad :dispatch-n value. Expected a collection, got got:', values);
     } else {
         values.forEach(value => router.dispatch(value));
@@ -101,7 +101,7 @@ register('dispatch-n', values => {
  *
  */
 register('deregister-event-handler', value => {
-    if (Immutable.isSeq(value)) {
+    if (Immutable.isSeq(value) || Array.isArray(value)) {
         value.forEach(v => clearHandlers(kind, v));
     } else {
         clearHandlers(kind, value);

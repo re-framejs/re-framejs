@@ -157,7 +157,7 @@ function of the data in `appDb`. Only changes to `appDb` cause UI
 changes. 
 
 So, to show that Modal, you’ll need to `assoc` some value into `appDb` 
-and have that new value change what is rendered in your reagent components.
+and have that new value change what is rendered in your react components.
 
 You might be tempted to do this: 
 ```javascript
@@ -202,7 +202,7 @@ reframe.regEventDb(
 So close.  But it still won’t work. There's a little wrinkle.
 
 That event handler for `:process-x` will indeed give back control 
-to the browser. BUT, because of the way reagent works, that `assoc` on `db` 
+to the browser. BUT, because of the way reframe works, that `set` on `db` 
 won't trigger DOM updates until the next animation frame runs, which is 16ms away.  
 
 So, you will be yielding control to the browser, but for next 16ms 
@@ -216,16 +216,19 @@ In these kinds of cases, where you are only going to give the UI
 then you had better be sure the DOM is fully synced. 
 
 To do this, you put meta data on the event being dispatched:
-```clj
-(re-frame.core/reg-event-fx
-  :process-x
-  (fn 
-    [{db :db} event-v]
-    {:dispatch  ^:flush-dom [:do-work-process-x]   ;; <--- NOW WITH METADATA         
-     :db (assoc  db  :processing-X true)}))  ;; ao the modal gets rendered
+```javascript
+regEventFx(
+    'process-x',
+    (cofx, event) => {
+        return {
+            dispatch: reframe.markFlushDom(['do-work-process-x']),       // <--- NOW WITH METADATA
+            db: cofx.get('db').set('processing-x', true)                 // ao the modal gets rendered
+        }
+    }
+)
 ```
 
-Notice the `^:flush-dom` metadata on the event being dispatched.  Use 
+Notice the `reframe.markFlushDom` metadata on the event being dispatched.  Use 
 that when you want the UI to be fully updated before the event dispatch 
 is handled. 
 

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/rxjs/4.1.0/rx.all.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/immutable/3.8.1/immutable.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/15.4.2/react-dom.js"></script>
+<script src="js/reframe.js"></script>
+
+<script>
+    reframe.regEventDb('initialize', (db, [_, data]) => Immutable.Map({
+        data: data,
+        running: false
+    }));
+    reframe.regEventFx('processX', (cofx) => {
+       return {
+           db: cofx.get('db').set('running', true),
+           dispatch: reframe.markFlushDom(['do-processX'])
+       }
+    });
+    reframe.regEventDb('do-processX', (db) => {
+        for (let i=0; i< 10000; i++) {
+            console.log(i,'I\'m busy right now');
+        }
+        return db
+            .update('data', 1, old => old +1)
+            .set('running', false);
+    });
+    reframe.regSub('running?', (db) => db.get('running', false));
+    reframe.regSub('data', (db) => db.get('data'));
+
+    reframe.dispatchSync(['initialize', 1]);
+    const App = reframe.view('App', function() {
+        return React.DOM.div(null,
+            React.DOM.button({
+                onClick: () => reframe.dispatch(['processX'])
+            }, 'Start!'),
+            React.DOM.div(null, 'Running: ', '' + this.derefSub(['running?'])),
+            React.DOM.div(null, 'Data:: ', this.derefSub(['data'])));
+    });
+    ReactDOM.render(App(), document.querySelector('#app'))
+
+</script>
+</body>
+</html>

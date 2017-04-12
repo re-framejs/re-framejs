@@ -72,7 +72,7 @@ export function dbHandlerToInterceptor(handlerFn) {
                 db = getCoeffect(ctx, 'db'),
                 event = getCoeffect(ctx, 'event');
 
-            return assocEffect(ctx, 'db', Immutable.fromJS(handlerFn(db, event)));
+            return assocEffect(ctx, 'db', handlerFn(db, event));
         }
     });
 }
@@ -93,7 +93,7 @@ export function fxHandlerToInterceptor(handlerFn) {
         id: 'fx-handler',
         before: function fxHandlerBefore(ctx) {
             const event = getCoeffect(ctx, 'event');
-            return ctx.set('effects', Immutable.fromJS(handlerFn(ctx.get('coeffects'), event)));
+            return ctx.set('effects', Immutable.Map(handlerFn(ctx.get('coeffects'), event)));
         }
     });
 }

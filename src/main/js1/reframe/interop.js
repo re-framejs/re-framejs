@@ -4,8 +4,8 @@ import * as Immutable from 'immutable';
 
 export const nextTick = batching.nextTick;
 
-export function afterRender() {
-    throw new Error('not implemented yet');
+export function afterRender(f) {
+    batching.doAfterRender(f);
 }
 
 export function reagentId(value) {

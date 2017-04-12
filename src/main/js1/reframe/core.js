@@ -179,3 +179,5 @@ export function togglePause(pause) {
     }
 }
 pause$.subscribe(pause => togglePause(pause));
+
+export const markFlushDom = router.markFlushDom;

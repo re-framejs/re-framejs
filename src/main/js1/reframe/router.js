@@ -59,15 +59,20 @@ import {appDb} from 'reframe/db';
 //      which will run event processing after the next Reagent animation frame.
 //
 
+export function markFlushDom(event) {
+    event._flushDom = true;
+    return event;
+}
+
 const laterFns = {
-    'flush-dom': (f) => afterRender(() => nextTick(f)),
+    '_flushDom': (f) => afterRender(() => setTimeout(f, 0)),
     'yield': nextTick
 };
 
 function doTrigger(fsm, state, trigger, arg) {
     if (trigger === 'pause') {
         return ['paused', (fsm) => {
-            fsm._pause();
+            fsm._pause(arg);
         }];
     }
 
@@ -82,7 +87,8 @@ function doTrigger(fsm, state, trigger, arg) {
             fsm._runNextTick();
         }];
     } else if (state === 'idle' && trigger === 'resume') {
-        return ['idle', (fsm) => {}];
+        return ['idle', (fsm) => {
+        }];
     }
     /**
      * State: :scheduled  (the queue is scheduled to run, soon)
@@ -98,7 +104,8 @@ function doTrigger(fsm, state, trigger, arg) {
             fsm._runQueue();
         }];
     } else if (state === 'scheduled' && trigger === 'resume') {
-        return ['scheduled', (fsm) => {}];
+        return ['scheduled', (fsm) => {
+        }];
     }
 
     /**
@@ -111,7 +118,7 @@ function doTrigger(fsm, state, trigger, arg) {
     }
     else if (state === 'running' && trigger === 'pause') {
         return ['paused', (fsm) => {
-            fsm._pause();
+            fsm._pause(arg);
         }];
     }
     else if (state === 'running' && trigger === 'exception') {
@@ -145,7 +152,7 @@ function doTrigger(fsm, state, trigger, arg) {
             fsm._resume(arg);
         }];
     } else {
-        throw new Error("re-frame: router state transition not found. State '" + state + "', trigger '" + trigger +"'");
+        throw new Error("re-frame: router state transition not found. State '" + state + "', trigger '" + trigger + "'");
     }
 }
 
@@ -203,11 +210,22 @@ class Fsm {
     }
 
     _runQueue() {
+        let paused = false;
         for (let i = this._queue.length; i > 0; i--) {
             // TODO add later-fns
-            this._process1stEventInQueue();
+            const event = this._queue[0];
+            const later = Object.keys(laterFns).map(fn => event[fn] ? laterFns[fn] : false).filter(Boolean)[0];
+            if (later) {
+                this.trigger('pause', later);
+                paused = true;
+                break;
+            } else {
+                this._process1stEventInQueue();
+            }
         }
-        this.trigger('finish-run', null);
+        if (!paused) {
+            this.trigger('finish-run', null);
+        }
     }
 
     _exception(ex) {
@@ -216,8 +234,10 @@ class Fsm {
     }
 
     _pause(laterFn) {
-        // console.log('pause');
-        // laterFn(() => this.trigger('resume', null));
+        // console.log('pause', laterFn);
+        if (laterFn) {
+            laterFn(() => this.trigger('resume', null));
+        }
     }
 
     _callPostEventCallbacks(event) {
@@ -228,7 +248,9 @@ class Fsm {
 
     _resume() {
         // console.log('resume');
-        // this._process1stEventInQueue();
+        if (this._queue[0]) {
+            this._process1stEventInQueue();
+        }
         this._runQueue();
     }
 }

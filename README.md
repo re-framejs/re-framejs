@@ -13,10 +13,8 @@ y'know. Pretty good.
 > &nbsp;&nbsp;&nbsp; reflecting on identity, flow and derived values
 
 
-[![Clojars Project](https://img.shields.io/clojars/v/re-frame.svg)](https://clojars.org/re-frame)
+[![npm version](https://img.shields.io/clojars/v/re-frame.svg)](https://www.npmjs.com/package/re-framejs)
 [![GitHub license](https://img.shields.io/github/license/Day8/re-frame.svg)](license.txt)
-[![Circle CI](https://circleci.com/gh/Day8/re-frame/tree/develop.svg?style=shield&circle-token=:circle-ci-badge-token)](https://circleci.com/gh/Day8/re-frame/tree/develop)
-[![Circle CI](https://circleci.com/gh/Day8/re-frame/tree/master.svg?style=shield&circle-token=:circle-ci-badge-token)](https://circleci.com/gh/Day8/re-frame/tree/master)
 
 
 ## Why Should You Care?

@@ -1,5 +1,21 @@
 'use strict';
-import {isImmutable, isPrimitive, isObservable} from 'reframe/utils';
+import {isImmutable, isPrimitive, isObservable, isRxObservable} from 'reframe/utils';
+import * as Immutable from 'immutable';
+
+function isSameType(a, b, predicate) {
+    return predicate(a) && predicate(b);
+}
+
+function equals(a, b) {
+    if (isSameType(a, b, isPrimitive)
+        || isSameType(a, b, isImmutable)
+        || isSameType(a, b, isObservable)) {
+        return Immutable.is(a, b);
+    } else if (isRxObservable(a, b)) {
+        return a === b;
+    }
+    return false;
+}
 
 export function shouldUpdateArgv(props, nextProps) {
     if (props.length !== nextProps.length) {
@@ -7,8 +23,8 @@ export function shouldUpdateArgv(props, nextProps) {
     }
 
     const maxLength = Math.max(props.length, nextProps.length);
-    for (let i=0; i< maxLength; i++) {
-        if (!Immutable.is(props[i], nextProps[i])) {
+    for (let i = 0; i < maxLength; i++) {
+        if (!equals(props[i], nextProps[i])) {
             return true;
         }
     }
@@ -24,14 +40,14 @@ export function shouldUpdateArgv(props, nextProps) {
  * @param {array} ignore ignore these keys
  * @returns {boolean} true if component should be rerendered
  */
-export function shouldUpdate(props, nextProps, ignore=[]) {
-    const keys1 = props? Object.keys(props) : [];
-    const keys2 = nextProps?Object.keys(nextProps) : [];
+export function shouldUpdate(props, nextProps, ignore = []) {
+    const keys1 = props ? Object.keys(props) : [];
+    const keys2 = nextProps ? Object.keys(nextProps) : [];
     for (let prop of new Set(keys1.concat(keys2))) {
         if (ignore.length > 0 && ignore.indexOf(prop) >= 0) {
             continue;
         }
-        if (!Immutable.is(props[prop], nextProps[prop])) {
+        if (!equals(props[prop], nextProps[prop])) {
             return true;
         }
     }

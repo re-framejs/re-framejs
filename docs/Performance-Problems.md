@@ -22,7 +22,7 @@ Are you are using the `reframe/debug` Interceptor?
 You should be, it's useful. __But__ you do need to be aware of its possible performance implications.  
 
 `debug` reports what's changed after an event handler has run by using 
-`immutablediff/diff` to do deep, CPU intensive diff on `appDb`. 
+`immutablediff.diff` to do deep, CPU intensive diff on `appDb`. 
 That diff could be taking a while, and leading to apparent performance problems.
 
 The good news is this really isn't a production problem.  `debug` should only be 
@@ -66,53 +66,53 @@ and that it provides 3 props  to each child:
 This arrangement could be slow. 
 
 **First**, you have a parent component returning hiccup for 361 sub-components
-and that's a lot of hiccup!! Sure, it might not be much code - just a couple 
+and that's a lot of jsx!! Sure, it might not be much code - just a couple 
 of nested `for`, but the hiccup data structure built will be substantial.
 
 **Second**, after the board renderer returns all this hiccup, for every 
-one of those 361 sub-components, Reagent must then check the 3 props to 
+one of those 361 sub-components, React must then check the 3 props to 
 see if they are `=` to the value last rendered (to determine if they, in turn, 
 need to be rerendered), and the comparison on the 3rd prop (game state) 
 might be deep and expensive. Worse, we do the same expensive check 361 
 times in a row, and every time we get a `false` (because games state 
 is not `=` to last time). 
 
-**Third**, because Reagent gets 361 `falses`, it will further rerender 
+**Third**, because React gets 361 `falses`, it will further rerender 
 all 361 sub-components even though 360 of them produce the same 
-hiccup as last time - only one position in the gird has changed. 
+jsx as last time - only one position in the gird has changed. 
 
 So, when a new stone is placed on the board, and the game state changes, 
 that triggers a large amount of unnecessary calculation, just to figure 
 out that there's only a rendering change at one point in the 19x19 grid. 
 
-So, that's how you can get a performance problem:  lots of hiccup, 
+So, that's how you can get a performance problem:  lots of jsx, 
 mixed with time consuming `=` tests on big props. 
 
 ### Solutions To Problem 2
 
 The solution is to not do the unnecessary work.  Duh!  
 
-Produce only the hiccup that is needed.  Don't unnecessarily 
+Produce only the jsx that is needed.  Don't unnecessarily 
 pass around big complicated state in props, unless you really need to. 
 
 In the Go example described above, for each new stone placed, only 
 one point in the Go board actually needs to be rerendered, and 
-yet our code asked Reagent to chew a lot of CPU to figure that out.
+yet our code asked React to chew a lot of CPU to figure that out.
 
 These kinds of tweaks would improve performance: 
 
 - don't give the entire game state to each of the 361 sub components 
 and then ask them to extract what they need.  Instead, give each 
 just the state it needs, and nothing more. That will make the `=` 
-process faster. It will also allow for Reagent to figure out that 
+process faster. It will also allow for React to figure out that 
 360 of the sub components have the same props as last time, and 
 don't need rerendering. And, so, only one sub-component will be 
 rerendered when the parent "board level" component rerenders.
 
-- Also, could you render the board row by row? So that less hiccup 
+- Also, could you render the board row by row? So that less jsx 
 is produced by any one component?  Can those rows `subscribe` 
 to just the data for their row, so they only rerender when the 
-row-data changes; they only generate hiccup when something really has changed?
+row-data changes; they only generate jsx when something really has changed?
 
 ## 3. Are you Using a React `key`?
 
@@ -124,15 +124,15 @@ Some resources:
 2. http://stackoverflow.com/a/37186230/5215391
 3. https://groups.google.com/d/msg/reagent-project/J1ELaLV20MU/iutebA-JEgAJ
 
-
+<!--
 ## 4. Callback Functions
 
 Look at this `div`:
 ```
-[:div  {:on-mouse-over  (fn [event] ....)  }   "hello"]
+<div onMouseOver={(event) => {...}}>hello</div>
 ```
 
-Every time it is rendered, that `:on-mouse-over` function will be regenerated, 
+Every time it is rendered, that `onMouseOver` function will be regenerated, 
 and it will NOT test `=` to the last time it rendered.  It will appear to be a new function. 
 It will appear to React that it has to replace the event handler. 
   
@@ -154,7 +154,7 @@ the event handler has been replaced.
 But like I say, don't be too paranoid about this, it is unlikely
 to be an issue unless you have something like a table with a 
 lot of rows. 
-
+-->
 
 ## A Weapon 
 

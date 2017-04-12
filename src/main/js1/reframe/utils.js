@@ -20,5 +20,9 @@ export function isObject(obj) {
 }
 
 export function isObservable(obj) {
-    return obj instanceof Observable || obj instanceof Rx.Observable;
+    return obj instanceof Observable;
+}
+
+export function isRxObservable(obj) {
+    return obj instanceof Rx.Observable;
 }

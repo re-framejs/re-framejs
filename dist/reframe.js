@@ -2618,6 +2618,25 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var _utils = __webpack_require__(17);
 	
+	var _immutable = __webpack_require__(3);
+	
+	var Immutable = _interopRequireWildcard(_immutable);
+	
+	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
+	
+	function isSameType(a, b, predicate) {
+	    return predicate(a) && predicate(b);
+	}
+	
+	function equals(a, b) {
+	    if (isSameType(a, b, _utils.isPrimitive) || isSameType(a, b, _utils.isImmutable) || isSameType(a, b, _utils.isObservable)) {
+	        return Immutable.is(a, b);
+	    } else if ((0, _utils.isRxObservable)(a, b)) {
+	        return a === b;
+	    }
+	    return false;
+	}
+	
 	function shouldUpdateArgv(props, nextProps) {
 	    if (props.length !== nextProps.length) {
 	        return true;
@@ -2625,7 +2644,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    var maxLength = Math.max(props.length, nextProps.length);
 	    for (var i = 0; i < maxLength; i++) {
-	        if (!Immutable.is(props[i], nextProps[i])) {
+	        if (!equals(props[i], nextProps[i])) {
 	            return true;
 	        }
 	    }
@@ -2657,7 +2676,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (ignore.length > 0 && ignore.indexOf(prop) >= 0) {
 	                continue;
 	            }
-	            if (!Immutable.is(props[prop], nextProps[prop])) {
+	            if (!equals(props[prop], nextProps[prop])) {
 	                return true;
 	            }
 	        }
@@ -2696,6 +2715,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.isFunction = isFunction;
 	exports.isObject = isObject;
 	exports.isObservable = isObservable;
+	exports.isRxObservable = isRxObservable;
 	
 	var _immutable = __webpack_require__(3);
 	
@@ -2727,7 +2747,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	
 	function isObservable(obj) {
-	    return obj instanceof _ratom.Observable || obj instanceof Rx.Observable;
+	    return obj instanceof _ratom.Observable;
+	}
+	
+	function isRxObservable(obj) {
+	    return obj instanceof Rx.Observable;
 	}
 
 /***/ },

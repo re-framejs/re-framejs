@@ -36,51 +36,58 @@ To use a stateful js component, you'll need to write two Reagent components:
 The pattern involves the outer component, which sources data, supplying this data to the inner component **via props**. 
 
 ### Example Using Google Maps
+```javascript
+const GmapInner = reframe.view('GmapInner', {
+    update() {
+        const 
+            latitude = this.props.argv[0].get('latitude'),
+            longitude = this.props.argv[0].get('longitude'),
+            latLng = new google.maps.LagLng(latitude, longitude),
+            gmap = this.state.gmap.deref();
+        gmap.setPosition(latLng);
+        gmap.panTo(latLng);
+    },
+    getInitialState() {
+        return {
+            gmap: reframe.atom(),
+            options: {
+                zoom: 9
+            },
+        }
+    },
+    render() {
+        return <div><h4>Map</h4><div id="map-canvas" style={height: '400px'}></div></div>
+    },
+    componentDidMount() {
+        const 
+            canvas = document.getElemetById('map-canvas'),
+            gm = new google.maps.Map(canvas, this.state.options),
+            market = new google.maps.Market({map: gm, title: 'Drone'});
+        this.state.gmap.reset(Immutable.Map({
+            map: gm,
+            marker: marker
+        }))
+        
+        this.update();
+    },
+    componentDidUpdate() {
+        this.update();
+    }
+});
 
-```cljs
-(defn gmap-inner []
-  (let [gmap    (atom nil)
-        options (clj->js {"zoom" 9})
-        update  (fn [comp]
-                  (let [{:keys [latitude longitude]} (reagent/props comp)
-                        latlng (js/google.maps.LatLng. latitude longitude)]
-                    (.setPosition (:marker @gmap) latlng)
-                    (.panTo (:map @gmap) latlng)))]
-
-    (reagent/create-class
-      {:reagent-render (fn []
-                         [:div
-                          [:h4 "Map"]
-                          [:div#map-canvas {:style {:height "400px"}}]])
-
-       :component-did-mount (fn [comp]
-                              (let [canvas  (.getElementById js/document "map-canvas")
-                                    gm      (js/google.maps.Map. canvas options)
-                                    marker  (js/google.maps.Marker. (clj->js {:map gm :title "Drone"}))]
-                                (reset! gmap {:map gm :marker marker}))
-                              (update comp))
-
-       :component-did-update update
-       :display-name "gmap-inner"})))
-
-
-
-(defn gmap-outer []
-  (let [pos (subscribe [:current-position])]   ;; obtain the data
-    (fn []
-      [gmap-inner @pos])))
+const GmapOuter = reframe.view('GmapOuter', function() {
+   return GmapInner(this.derefSub(['current-position'])); 
+});
 ```
 
-
 Notes:
-  - `gmap-outer` obtains data via a subscription. It is quite simple - trivial almost.
-  - it then passes this data __as a prop__  to `gmap-inner`.  This inner component has the job of wrapping/managing the stateful js component (Gmap in our case above)
-  - when the data (delivered by the subscription) to the outer layer changes, the inner layer, `gmap-inner`, will be given a new prop - `@pos` in the case above.
+  - `GmapOuter` obtains data via a subscription. It is quite simple - trivial almost.
+  - it then passes this data __as a prop__  to `GmapInner`.  This inner component has the job of wrapping/managing the stateful js component (Gmap in our case above)
+  - when the data (delivered by the subscription) to the outer layer changes, the inner layer, `GmapInner`, will be given a new prop - `argv[0]` in the case above.
   - when the inner component is given new props, its entire set of lifecycle functions will be engaged. 
-  - the renderer for the inner layer ALWAYS renders the same, minimal container hiccup for the component.  Even though the `props` have changed, the same hiccup is output. So it will appear to React as if nothing changes from one render to the next. No work to be done. React/Reagent will leave the DOM untouched. 
+  - the renderer for the inner layer ALWAYS renders the same, minimal container jsx for the component.  Even though the `props` have changed, the same hiccup is output. So it will appear to React as if nothing changes from one render to the next. No work to be done. React/Reagent will leave the DOM untouched. 
   - but this inner component has other lifecycle functions and this is where the real work is done.  
-  - for example, after the renderer is called (which ignores its props), `component-did-update` will be called. In this function, we don't ignore the props, and we use them to update/mutate the stateful JS component.  
-  - the props passed (in this case `@pos`) in must be a map, otherwise `(reagent/props comp)` will return nil.
+  - for example, after the renderer is called (which ignores its props), `componentDidUpdate` will be called. In this function, we don't ignore the props, and we use them to update/mutate the stateful JS component.  
 
 ### Pattern Discovery 
 

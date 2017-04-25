@@ -132,6 +132,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	var batching = _interopRequireWildcard(_batching);
 	
+	var _rx = __webpack_require__(7);
+	
+	var Rx = _interopRequireWildcard(_rx);
+	
 	var _subindex = __webpack_require__(23);
 	
 	function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }

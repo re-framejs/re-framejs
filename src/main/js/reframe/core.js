@@ -11,6 +11,8 @@ import * as router from 'reframe/router';
 import * as stdinterceptors from 'reframe/stdinterceptors';
 import * as subs from 'reframe/subs';
 import * as batching from 'reframe/batching';
+import * as Rx from 'rx';
+
 // import * as _form from 'reframe/form/core';
 //
 // export const form = _form;

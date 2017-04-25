@@ -1,7 +1,7 @@
 {
   "name": "re-framejs",
   "version": "0.1.0",
-  "description": "Reagent re-frame implementation using RxJs",
+  "description": "Reagent re-frame implementation using javascript",
   "main": "dist/reframe.js",
   "files": [
     "dist/reframe.js",

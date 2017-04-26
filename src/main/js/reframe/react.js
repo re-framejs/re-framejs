@@ -205,8 +205,8 @@ function propsView(mixin, args) {
 
     let component = React.createClass(componentObj);
     let factory = React.createFactory(component);
-    return function (props, context, updater) {
-        return factory(props, context);
+    return function (props) {
+        return factory(props);
     };
 }
 

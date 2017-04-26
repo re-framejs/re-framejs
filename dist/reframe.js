@@ -2601,8 +2601,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	
 	    var component = React.createClass(componentObj);
 	    var factory = React.createFactory(component);
-	    return function (props, context, updater) {
-	        return factory(props, context);
+	    return function (props) {
+	        return factory(props);
 	    };
 	}
 	

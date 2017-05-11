@@ -10,6 +10,7 @@
     "README.md"
   ],
   "dependencies": {
+    "create-react-class": "15.5.2",
     "immutable": "*",
     "react": "*",
     "rx": "*"

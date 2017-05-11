@@ -138,6 +138,8 @@ export const viewV = react.viewV;
 export const viewSP = react.viewSP;
 export const viewSV = react.viewSV;
 export const view = react.viewSV;
+export const ui = react.ui;
+export const uix = react.uix;
 export const render = batching.flush;
 export const flush = batching.flush;
 

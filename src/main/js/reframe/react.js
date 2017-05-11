@@ -7,6 +7,7 @@ import * as ratom from 'reframe/ratom';
 import * as batching from 'reframe/batching';
 import {isDebug, isTraceReact} from 'reframe/interop';
 import {markRendered} from 'reframe/batching';
+import createReactClass from 'create-react-class';
 
 // export const pause$ = new Rx.BehaviorSubject(true);
 
@@ -238,11 +239,37 @@ function propsView(mixin, args) {
         return ratom.runInCtx(this, () => oldRender.call(this, this.props));
     };
 
-    let component = React.createClass(componentObj);
+    let component = createReactClass(componentObj);
     let factory = React.createFactory(component);
     return function (props) {
         return factory(props);
     };
+}
+
+function createComponent(mixin, args) {
+    let componentObj = createComponentObj(mixin, args);
+    let oldRender = componentObj.render;
+    componentObj.render = function () {
+        this.traceReact('Render');
+        markRendered(this);
+        return ratom.runInCtx(this, () => oldRender.call(this, this.props));
+    };
+
+    return createReactClass(componentObj);
+}
+
+function createFactory(mixin, args) {
+    const component = createComponent(mixin, args);
+    let factory = React.createFactory(component);
+    return factory;
+}
+
+export function uix(name, mixin, clazz) {
+    return createComponent([SubscriptionMixin(false)], arguments);
+}
+
+export function ui(name, mixin, clazz) {
+    return createFactory([SubscriptionMixin(false)], arguments);
 }
 
 function vectorView(mixin, args) {
@@ -253,7 +280,7 @@ function vectorView(mixin, args) {
         markRendered(this);
         return ratom.runInCtx(this, () => oldRender.apply(this, this.props.argv));
     };
-    let component = React.createClass(componentObj);
+    let component = createReactClass(componentObj);
     let factory = React.createFactory(component);
 
     return function () {

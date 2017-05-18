@@ -81,6 +81,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.swap = swap;
 	exports.reset = reset;
 	exports.togglePause = togglePause;
+	exports.deref = deref;
 	
 	var _cofx = __webpack_require__(1);
 	
@@ -322,6 +323,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 	
 	var markFlushDom = exports.markFlushDom = router.markFlushDom;
+	
+	function deref(observable) {
+	    return observable.deref();
+	}
 
 /***/ },
 /* 1 */

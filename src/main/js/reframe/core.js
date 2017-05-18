@@ -185,3 +185,7 @@ export function togglePause(pause) {
 pause$.subscribe(pause => togglePause(pause));
 
 export const markFlushDom = router.markFlushDom;
+
+export function deref(observable) {
+    return observable.deref();
+}

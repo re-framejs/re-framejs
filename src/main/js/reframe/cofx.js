@@ -3,7 +3,7 @@ import {toInterceptor} from 'reframe/interceptor';
 import {appDb} from 'reframe/db';
 const kind = 'cofx';
 
-function register(id, handlerFn) {
+export function register(id, handlerFn) {
     return registerHandler(kind, id, handlerFn);
 }
 

@@ -338,6 +338,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: true
 	});
 	exports.injectDb = undefined;
+	exports.register = register;
 	
 	var _registrar = __webpack_require__(2);
 	
@@ -1178,6 +1179,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    value: true
 	});
 	exports.doFx = undefined;
+	exports.register = register;
 	
 	var _immutable = __webpack_require__(3);
 	

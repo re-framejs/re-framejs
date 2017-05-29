@@ -7,7 +7,7 @@ import {appDb} from 'reframe/db';
 
 const kind = 'fx';
 
-function register(id, handlerFn) {
+export function register(id, handlerFn) {
     return registerHandler(kind, id, handlerFn);
 }
 

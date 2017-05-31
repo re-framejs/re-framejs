@@ -1,6 +1,6 @@
 {
   "name": "re-framejs",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Reagent re-frame implementation using javascript",
   "main": "dist/reframe.js",
   "files": [

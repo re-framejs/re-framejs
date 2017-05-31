@@ -339,6 +339,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 	exports.injectDb = undefined;
 	exports.register = register;
+	exports.injectCofx = injectCofx;
 	
 	var _registrar = __webpack_require__(2);
 	
@@ -372,26 +373,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @returns {*}
 	 */
 	function injectCofx(id) {
-	    var value = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : undefined;
+	    for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	        args[_key - 1] = arguments[_key];
+	    }
 	
 	    var handler = (0, _registrar.getHandler)(kind, id);
-	    if (typeof value !== 'undefined') {
-	        return (0, _interceptor.toInterceptor)({
-	            id: 'coeffects',
-	            before: function coeffectsBefore(ctx) {
-	                return ctx.update('coeffects', handler);
-	            }
-	        });
-	    } else {
-	        return (0, _interceptor.toInterceptor)({
-	            id: 'coeffects',
-	            before: function coeffectsBefore(ctx) {
-	                return ctx.update('coeffects', function (old) {
-	                    return handler(old, value);
-	                });
-	            }
-	        });
-	    }
+	    return (0, _interceptor.toInterceptor)({
+	        id: 'coeffects',
+	        before: function coeffectsBefore(ctx) {
+	            return ctx.update('coeffects', function (old) {
+	                return handler.apply(undefined, [old].concat(args));
+	            });
+	        }
+	    });
 	}
 	
 	register('db', function doCoeffectsHandler(coeffects) {
@@ -4211,7 +4205,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        id: 'fx-handler',
 	        before: function fxHandlerBefore(ctx) {
 	            var event = (0, _interceptor.getCoeffect)(ctx, 'event');
-	            return ctx.set('effects', Immutable.Map(handlerFn(ctx.get('coeffects'), event)));
+	            return ctx.set('effects', Immutable.Map(handlerFn(ctx.get('coeffects').toObject(), event)));
 	        }
 	    });
 	}

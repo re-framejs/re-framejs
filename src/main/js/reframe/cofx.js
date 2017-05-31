@@ -26,24 +26,14 @@ export function register(id, handlerFn) {
  * @param value
  * @returns {*}
  */
-function injectCofx(id, value = undefined) {
+export function injectCofx(id, ...args) {
     const handler = getHandler(kind, id);
-    if (typeof value !== 'undefined') {
-        return toInterceptor({
-            id: 'coeffects',
-            before: function coeffectsBefore(ctx) {
-                return ctx.update('coeffects', handler)
-            }
-        });
-    } else {
-        return toInterceptor({
-            id: 'coeffects',
-            before: function coeffectsBefore(ctx) {
-                return ctx.update('coeffects', old => handler(old, value))
-            }
-        });
-
-    }
+    return toInterceptor({
+        id: 'coeffects',
+        before: function coeffectsBefore(ctx) {
+            return ctx.update('coeffects', old => handler(old, ...args))
+        }
+    });
 }
 
 register('db', function doCoeffectsHandler(coeffects) {

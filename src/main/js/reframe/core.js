@@ -86,8 +86,8 @@ export function clearFx(id) {
 }
 
 // coeffects
-export const regCofx = cofx.register
-export const injectCofx = cofx.injectCofx
+export const regCofx = cofx.register;
+export const injectCofx = cofx.injectCofx;
 export function clearCofx(id) {
     registrar.clearHandlers(cofx.kind, id);
 }

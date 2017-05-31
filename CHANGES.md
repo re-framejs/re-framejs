@@ -1,3 +1,6 @@
+## 1.0.6 (2017.05)
+- cofx in regEventFx handler is now js object `{}` instead of `Immutable.Map({})`, so you can use destructuring.
+
 ## 1.0.3 (2017.05) 
 - Added deref function into core
 

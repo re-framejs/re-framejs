@@ -12,7 +12,8 @@ export const debug = toInterceptor({
         const
             event = getCoeffect(ctx, 'event'),
             origDb = getCoeffect(ctx, 'db'),
-            newDb = getEffect(ctx, 'db', 'not-found');
+            newDb = getEffect(ctx, 'db', 'not-found'),
+            effectsWithoutDb = ctx.getIn(['effects'], Immutable.Map()).delete('db');
 
         if (newDb === 'not-found') {
             console.log('No :db changes caused by:', event);
@@ -31,6 +32,11 @@ export const debug = toInterceptor({
                 }
             }
         }
+
+        if (effectsWithoutDb.size > 0) {
+            console.log('Effects caused by ', event, effectsWithoutDb);
+        }
+
 
         return ctx;
     }

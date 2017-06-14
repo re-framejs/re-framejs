@@ -17,6 +17,10 @@ export const doFx = toInterceptor({
         ctx.get('effects').forEach((value, effect) => {
             const effectFn = getHandler(kind, effect, true);
 
+            if (!effectFn) {
+                console.error('No effect handler registered for effect', effect, 'ctx:', ctx);
+            }
+
             if (effectFn) {
                 effectFn(value);
             }

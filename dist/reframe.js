@@ -1392,6 +1392,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        ctx.get('effects').forEach(function (value, effect) {
 	            var effectFn = (0, _registrar.getHandler)(kind, effect, true);
 	
+	            if (!effectFn) {
+	                console.error('No effect handler registered for effect', effect, 'ctx:', ctx);
+	            }
+	
 	            if (effectFn) {
 	                effectFn(value);
 	            }

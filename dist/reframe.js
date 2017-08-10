@@ -1421,10 +1421,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	register('dispatch-later', function (values) {
 	    values.forEach(function (value) {
-	        var ms = value.get(0),
-	            dispatch = value.get(1);
+	        var ms = value.ms,
+	            dispatch = value.dispatch;
 	
-	        if (!dispatch || !ms >= 0) {
+	
+	        if (!Array.isArray(dispatch) || typeof ms !== 'number') {
 	            console.error('re-frame: ignoring bad "dispatch-later" value:', value);
 	        } else {
 	            setTimeout(function () {

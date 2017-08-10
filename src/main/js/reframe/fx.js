@@ -46,11 +46,9 @@ export const doFx = toInterceptor({
  */
 register('dispatch-later', values => {
     values.forEach(value => {
-        const
-            ms = value.get(0),
-            dispatch = value.get(1);
+        const {ms, dispatch} = value;
 
-        if (!dispatch || !ms >= 0) {
+        if (!Array.isArray(dispatch) || typeof ms !== 'number') {
             console.error('re-frame: ignoring bad "dispatch-later" value:', value);
         } else {
             setTimeout(() => router.dispatch(dispatch), ms);
